@@ -9,11 +9,11 @@
 }
 
 .label {
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 500;
-  color: #1f2933;
-  font-family: 'Inter', 'Roboto', system-ui, sans-serif;
-  margin-bottom: 8px;
+  color: #374151;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  margin-bottom: 4px;
 }
 
 .required {
@@ -29,14 +29,14 @@
 
 .input {
   height: 40px;
-  padding: 10px 16px;
-  border: 1px solid #cbd2d9;
-  border-radius: 10px;
-  font-size: 16px;
-  font-family: 'Inter', 'Roboto', system-ui, sans-serif;
-  color: #1f2933;
+  padding: 10px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 14px;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  color: #111827;
   background-color: #ffffff;
-  transition: all 120ms ease-in;
+  transition: all 0.15s ease;
   outline: none;
   line-height: 1.5;
   width: 100%;
@@ -51,14 +51,18 @@
   box-shadow: 0 0 0 3px rgba(21, 101, 216, 0.1);
 }
 
+.input:hover:not(:disabled):not(:focus) {
+  border-color: #9ca3af;
+}
+
 .input:disabled {
-  background-color: #f5f7fa;
+  background-color: #f9fafb;
+  color: #9ca3af;
   cursor: not-allowed;
-  opacity: 0.6;
 }
 
 .input::placeholder {
-  color: #9aa5b1;
+  color: #9ca3af;
 }
 
 .inputError {
@@ -82,8 +86,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #7b8794;
-  transition: color 120ms ease-in;
+  color: #6b7280;
+  transition: color 0.15s ease;
   z-index: 1;
 }
 
@@ -105,37 +109,5 @@
   font-size: 12px;
   color: #ef4444;
   margin-top: -4px;
-}
-
-/* Dark mode support */
-@media (prefers-color-scheme: dark) {
-  .label {
-    color: #f0f6fc;
-  }
-
-  .input {
-    background-color: #161b22;
-    border-color: #30363d;
-    color: #f0f6fc;
-  }
-
-  .input:focus {
-    border-color: #1565d8;
-  }
-
-  .input:disabled {
-    background-color: #0d1117;
-  }
-
-  .input::placeholder {
-    color: #7b8794;
-  }
-
-  .passwordToggle {
-    color: #7b8794;
-  }
-
-  .passwordToggle:hover:not(:disabled) {
-    color: #1565d8;
-  }
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }

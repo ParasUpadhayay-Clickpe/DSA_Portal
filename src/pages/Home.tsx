@@ -1,12 +1,12 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
-import { Button } from '@/components/common';
+import { MainLayout } from '@/layouts/MainLayout';
 import styles from './Home.module.css';
 
 export const Home: React.FC = () => {
     const navigate = useNavigate();
-    const { isAuthenticated, currentUser, logout } = useAuth();
+    const { isAuthenticated } = useAuth();
 
     React.useEffect(() => {
         if (!isAuthenticated) {
@@ -19,27 +19,17 @@ export const Home: React.FC = () => {
     }
 
     return (
-        <div className={styles.container}>
-            <div className={styles.card}>
-                <h1 className={styles.title}>Welcome to DSA Portal</h1>
-                {currentUser && (
-                    <div className={styles.userInfo}>
-                        <p className={styles.userText}>
-                            Logged in as: <strong>{currentUser.username}</strong>
-                        </p>
-                        {currentUser.email && (
-                            <p className={styles.userText}>Email: {currentUser.email}</p>
-                        )}
-                        {currentUser.mobile && (
-                            <p className={styles.userText}>Mobile: {currentUser.mobile}</p>
-                        )}
-                    </div>
-                )}
-                <Button variant="primary" onClick={logout}>
-                    Logout
-                </Button>
+        <MainLayout>
+            <div className={styles.dashboardContainer}>
+                <div className={styles.dashboardCard}>
+                    <h1 className={styles.welcomeTitle}>Welcome to DSA Portal</h1>
+                    <p className={styles.welcomeSubtitle}>
+                        Your dashboard is ready. Start managing your leads and loans.
+                    </p>
+                    {/* Dashboard content will be added here */}
+                </div>
             </div>
-        </div>
+        </MainLayout>
     );
 };
 

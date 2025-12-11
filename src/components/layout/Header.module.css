@@ -1,0 +1,284 @@
+.header {
+    position: fixed;
+    top: 0;
+    left: 260px;
+    right: 0;
+    height: 64px;
+    background: #ffffff;
+    border-bottom: 1px solid #dbeafe;
+    z-index: 999;
+    transition: left 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 1px 3px 0 rgba(21, 101, 216, 0.1);
+}
+
+.header.sidebarCollapsed {
+    left: 72px;
+}
+
+.headerContent {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 100%;
+    padding: 0 24px;
+}
+
+.leftSection {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.mobileMenuButton {
+    display: none;
+    background: transparent;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    width: 40px;
+    height: 40px;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    color: #6b7280;
+}
+
+.mobileMenuButton:hover {
+    background: #f9fafb;
+    border-color: #d1d5db;
+    color: #1565d8;
+}
+
+@media (max-width: 768px) {
+    .mobileMenuButton {
+        display: flex;
+    }
+}
+
+.pageTitle {
+    font-size: 20px;
+    font-weight: 600;
+    color: #1565d8;
+    margin: 0;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+.rightSection {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.userMenuContainer {
+    position: relative;
+}
+
+.userButton {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: transparent;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 6px 12px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    color: #111827;
+}
+
+.userButton:hover {
+    background: #f9fafb;
+    border-color: #d1d5db;
+    color: #1565d8;
+}
+
+.avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
+    background: #f3f4f6;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 13px;
+    color: #111827;
+    border: 1px solid #e5e7eb;
+    flex-shrink: 0;
+}
+
+.userInfo {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+}
+
+.userName {
+    font-size: 14px;
+    font-weight: 500;
+    color: #111827;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+.userRole {
+    font-size: 12px;
+    color: #6b7280;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+.dropdownIcon {
+    font-size: 12px;
+    color: #6b7280;
+    transition: transform 0.2s ease;
+    margin-left: 4px;
+}
+
+.userMenuContainer:has(.userButton:hover) .dropdownIcon {
+    transform: rotate(180deg);
+}
+
+.overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 998;
+    background: transparent;
+}
+
+.userDropdown {
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    min-width: 240px;
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    padding: 8px;
+    z-index: 999;
+    animation: slideDown 0.15s ease;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-8px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.dropdownHeader {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    border-bottom: 1px solid #e5e7eb;
+    margin-bottom: 4px;
+}
+
+.dropdownAvatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+    background: #f3f4f6;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 14px;
+    color: #111827;
+    border: 1px solid #e5e7eb;
+    flex-shrink: 0;
+}
+
+.dropdownUserInfo {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    flex: 1;
+    min-width: 0;
+}
+
+.dropdownUserName {
+    font-size: 14px;
+    font-weight: 600;
+    color: #111827;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+.dropdownUserEmail {
+    font-size: 12px;
+    color: #6b7280;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.dropdownDivider {
+    height: 1px;
+    background: #e5e7eb;
+    margin: 4px 0;
+}
+
+.dropdownItem {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 10px 12px;
+    background: transparent;
+    border: none;
+    border-radius: 6px;
+    color: #374151;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    text-align: left;
+}
+
+.dropdownItem:hover {
+    background: #f3f4f6;
+    color: #1565d8;
+}
+
+.dropdownItemIcon {
+    width: 16px;
+    height: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #6b7280;
+}
+
+.dropdownItem:hover .dropdownItemIcon {
+    color: #1565d8;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .header {
+        left: 0 !important;
+    }
+
+    .headerContent {
+        padding: 0 16px;
+    }
+
+    .pageTitle {
+        font-size: 18px;
+    }
+
+    .userInfo {
+        display: none;
+    }
+}

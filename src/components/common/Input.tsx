@@ -3,7 +3,7 @@ import styles from './Input.module.css';
 
 interface InputProps {
   label?: string;
-  type?: 'text' | 'email' | 'password' | 'tel' | 'number';
+  type?: 'text' | 'email' | 'password' | 'tel' | 'number' | 'date';
   placeholder?: string;
   value: string;
   onChange: (value: string) => void;
