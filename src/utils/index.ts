@@ -1,0 +1,2 @@
+export { decryptAuthKey } from './crypto';
+

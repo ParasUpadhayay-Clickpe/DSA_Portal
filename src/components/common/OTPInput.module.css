@@ -1,0 +1,144 @@
+.otpWrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.label {
+    font-size: 14px;
+    font-weight: 500;
+    color: #1f2933;
+    font-family: 'Inter', 'Roboto', system-ui, sans-serif;
+}
+
+.required {
+    color: #ef4444;
+    margin-left: 4px;
+}
+
+.otpContainer {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    align-items: center;
+}
+
+.otpInput {
+    width: 56px;
+    height: 56px;
+    text-align: center;
+    font-size: 24px;
+    font-weight: 600;
+    border: 2px solid #cbd2d9;
+    border-radius: 12px;
+    background-color: #ffffff;
+    color: #1f2933;
+    transition: all 120ms ease-in;
+    outline: none;
+    font-family: 'Inter', 'Roboto', system-ui, sans-serif;
+}
+
+.otpInput:focus {
+    border-color: #1565d8;
+    box-shadow: 0 0 0 3px rgba(21, 101, 216, 0.1);
+    transform: scale(1.05);
+}
+
+.otpInput.active {
+    border-color: #1565d8;
+}
+
+.otpInput:disabled {
+    background-color: #f5f7fa;
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+.otpInput.error {
+    border-color: #ef4444;
+}
+
+.otpInput.error:focus {
+    border-color: #ef4444;
+    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+}
+
+.errorText {
+    font-size: 12px;
+    color: #ef4444;
+    margin-top: -4px;
+    text-align: center;
+}
+
+/* Glassmorphism variant for login page */
+.loginCard .otpWrapper .label {
+    color: rgba(255, 255, 255, 0.95);
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.loginCard .otpInput {
+    background: rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    color: #ffffff;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.loginCard .otpInput:focus {
+    background: rgba(255, 255, 255, 0.25);
+    border-color: rgba(255, 255, 255, 0.5);
+    box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.2);
+}
+
+.loginCard .otpInput.active {
+    border-color: rgba(255, 255, 255, 0.5);
+}
+
+.loginCard .otpInput.error {
+    border-color: rgba(239, 68, 68, 0.6);
+}
+
+.loginCard .otpInput.error:focus {
+    border-color: rgba(239, 68, 68, 0.8);
+    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.2);
+}
+
+.loginCard .errorText {
+    color: rgba(255, 255, 255, 0.95);
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+    .label {
+        color: #f0f6fc;
+    }
+
+    .otpInput {
+        background-color: #161b22;
+        border-color: #30363d;
+        color: #f0f6fc;
+    }
+
+    .otpInput:focus {
+        border-color: #1565d8;
+    }
+
+    .otpInput:disabled {
+        background-color: #0d1117;
+    }
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+    .otpContainer {
+        gap: 8px;
+    }
+
+    .otpInput {
+        width: 48px;
+        height: 48px;
+        font-size: 20px;
+    }
+}

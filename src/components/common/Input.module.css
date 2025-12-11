@@ -1,0 +1,141 @@
+.inputWrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.inputWrapper.fullWidth {
+  width: 100%;
+}
+
+.label {
+  font-size: 15px;
+  font-weight: 500;
+  color: #1f2933;
+  font-family: 'Inter', 'Roboto', system-ui, sans-serif;
+  margin-bottom: 8px;
+}
+
+.required {
+  color: #ef4444;
+  margin-left: 4px;
+}
+
+.inputContainer {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.input {
+  height: 40px;
+  padding: 10px 16px;
+  border: 1px solid #cbd2d9;
+  border-radius: 10px;
+  font-size: 16px;
+  font-family: 'Inter', 'Roboto', system-ui, sans-serif;
+  color: #1f2933;
+  background-color: #ffffff;
+  transition: all 120ms ease-in;
+  outline: none;
+  line-height: 1.5;
+  width: 100%;
+}
+
+.inputWithIcon {
+  padding-right: 48px;
+}
+
+.input:focus {
+  border-color: #1565d8;
+  box-shadow: 0 0 0 3px rgba(21, 101, 216, 0.1);
+}
+
+.input:disabled {
+  background-color: #f5f7fa;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.input::placeholder {
+  color: #9aa5b1;
+}
+
+.inputError {
+  border-color: #ef4444;
+}
+
+.inputError:focus {
+  border-color: #ef4444;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+}
+
+.passwordToggle {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #7b8794;
+  transition: color 120ms ease-in;
+  z-index: 1;
+}
+
+.passwordToggle:hover:not(:disabled) {
+  color: #1565d8;
+}
+
+.passwordToggle:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.passwordToggle svg {
+  width: 20px;
+  height: 20px;
+}
+
+.errorText {
+  font-size: 12px;
+  color: #ef4444;
+  margin-top: -4px;
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .label {
+    color: #f0f6fc;
+  }
+
+  .input {
+    background-color: #161b22;
+    border-color: #30363d;
+    color: #f0f6fc;
+  }
+
+  .input:focus {
+    border-color: #1565d8;
+  }
+
+  .input:disabled {
+    background-color: #0d1117;
+  }
+
+  .input::placeholder {
+    color: #7b8794;
+  }
+
+  .passwordToggle {
+    color: #7b8794;
+  }
+
+  .passwordToggle:hover:not(:disabled) {
+    color: #1565d8;
+  }
+}

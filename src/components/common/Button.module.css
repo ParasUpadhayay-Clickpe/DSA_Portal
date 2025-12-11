@@ -1,0 +1,102 @@
+.button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    border: none;
+    border-radius: 10px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 120ms ease-in;
+    font-family: 'Inter', 'Roboto', system-ui, sans-serif;
+}
+
+.button:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.button.loading {
+    cursor: wait;
+}
+
+/* Variants */
+.primary {
+    background-color: #1565d8;
+    color: #ffffff;
+}
+
+.primary:hover:not(:disabled) {
+    background-color: #1e88e5;
+}
+
+.secondary {
+    background-color: transparent;
+    border: 1px solid #1565d8;
+    color: #1565d8;
+}
+
+.secondary:hover:not(:disabled) {
+    background-color: rgba(30, 136, 229, 0.1);
+}
+
+.outline {
+    background-color: transparent;
+    border: 1px solid #cbd2d9;
+    color: #52606d;
+}
+
+.outline:hover:not(:disabled) {
+    border-color: #1565d8;
+    color: #1565d8;
+}
+
+/* Sizes */
+.small {
+    padding: 8px 16px;
+    font-size: 12px;
+}
+
+.medium {
+    height: 40px;
+    padding: 0 20px;
+    font-size: 14px;
+}
+
+.large {
+    padding: 16px 24px;
+    font-size: 16px;
+}
+
+.fullWidth {
+    width: 100%;
+}
+
+/* Spinner */
+.spinner {
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-top-color: #ffffff;
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+    .outline {
+        border-color: #30363d;
+        color: #c9d1d9;
+    }
+
+    .outline:hover:not(:disabled) {
+        border-color: #1565d8;
+        color: #1565d8;
+    }
+}
