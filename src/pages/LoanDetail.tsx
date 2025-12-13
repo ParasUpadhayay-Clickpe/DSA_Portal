@@ -1,12 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
+import { useRole } from '@/contexts/RoleContext';
 import { MainLayout } from '@/layouts/MainLayout';
 import { notesApi, timelineApi, documentVerificationApi, userProfileApi } from '@/api';
 import type { Loan } from '@/types/loans.types';
 import type { LoanNote } from '@/types/notes.types';
 import type { TimelineEvent } from '@/types/timeline.types';
 import type { KYCDocument } from '@/types/documentVerification.types';
+import { Skeleton } from '@/components/common';
 import styles from './LoanDetail.module.css';
 
 type TabType = 'overview' | 'notes' | 'documents' | 'timeline' | 'analysis';
@@ -16,6 +18,7 @@ export const LoanDetail: React.FC = () => {
     const location = useLocation();
     const navigate = useNavigate();
     const { isAuthenticated } = useAuth();
+    const { selectedRole } = useRole();
     const [activeTab, setActiveTab] = useState<TabType>('overview');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
@@ -24,18 +27,38 @@ export const LoanDetail: React.FC = () => {
     const loanFromState = location.state?.loan as Loan | undefined;
     const [loan, setLoan] = useState<Loan | null>(loanFromState || null);
 
+    // Check if Documents tab should be shown
+    const shouldShowDocumentsTab = useMemo(() => {
+        if (!loan) return false;
+
+        // Show if role is DOCUMENT_VERIFIER
+        if (selectedRole?.role_type === 'DOCUMENT_VERIFIER') {
+            return true;
+        }
+
+        // Show if role is agent (null) and clickpe_page_id is cp_page_9
+        if (selectedRole === null && loan.clickpe_page_id === 'cp_page_9') {
+            return true;
+        }
+
+        return false;
+    }, [loan, selectedRole]);
+
     // Notes
     const [notes, setNotes] = useState<LoanNote[]>([]);
     const [newNote, setNewNote] = useState('');
     const [addingNote, setAddingNote] = useState(false);
+    const [loadingNotes, setLoadingNotes] = useState(false);
 
     // Timeline
     const [timeline, setTimeline] = useState<TimelineEvent[]>([]);
+    const [loadingTimeline, setLoadingTimeline] = useState(false);
 
     // Documents
     const [kycDocuments, setKycDocuments] = useState<KYCDocument[]>([]);
     const [analysisData, setAnalysisData] = useState<Record<string, unknown> | null>(null);
     const [analysisStatus, setAnalysisStatus] = useState<'idle' | 'loading' | 'syncing' | 'success' | 'error'>('idle');
+    const [loadingDocuments, setLoadingDocuments] = useState(false);
 
     useEffect(() => {
         if (!isAuthenticated) {
@@ -54,6 +77,13 @@ export const LoanDetail: React.FC = () => {
         }
     }, [loanId, loanFromState]);
 
+    // Switch to overview tab if documents tab becomes unavailable
+    useEffect(() => {
+        if (activeTab === 'documents' && !shouldShowDocumentsTab) {
+            setActiveTab('overview');
+        }
+    }, [shouldShowDocumentsTab, activeTab]);
+
     useEffect(() => {
         if (loan && activeTab === 'notes') {
             fetchNotes();
@@ -61,18 +91,20 @@ export const LoanDetail: React.FC = () => {
         if (loan && activeTab === 'timeline') {
             fetchTimeline();
         }
-        if (loan && activeTab === 'documents') {
+        if (loan && activeTab === 'documents' && shouldShowDocumentsTab) {
             fetchDocuments();
+            fetchAnalysisData();
         }
         if (loan && activeTab === 'analysis') {
             fetchAnalysisData();
         }
-    }, [loan, activeTab]);
+    }, [loan, activeTab, shouldShowDocumentsTab]);
 
 
     const fetchNotes = async () => {
         if (!loanId) return;
 
+        setLoadingNotes(true);
         try {
             const response = await notesApi.getLoanNotes({ loan_id: loanId });
             if (response.status === 'Success' && response.data) {
@@ -80,12 +112,15 @@ export const LoanDetail: React.FC = () => {
             }
         } catch (err) {
             console.error('Failed to fetch notes:', err);
+        } finally {
+            setLoadingNotes(false);
         }
     };
 
     const fetchTimeline = async () => {
         if (!loan?.user_id) return;
 
+        setLoadingTimeline(true);
         try {
             const response = await timelineApi.getUserTimeline({
                 query_name: 'cp_mfl_user_timeline',
@@ -96,12 +131,15 @@ export const LoanDetail: React.FC = () => {
             }
         } catch (err) {
             console.error('Failed to fetch timeline:', err);
+        } finally {
+            setLoadingTimeline(false);
         }
     };
 
     const fetchDocuments = async () => {
         if (!loan?.user_id) return;
 
+        setLoadingDocuments(true);
         try {
             const response = await documentVerificationApi.getKYCDocuments({ user_id: loan.user_id });
             if (response.status && response.data) {
@@ -109,6 +147,8 @@ export const LoanDetail: React.FC = () => {
             }
         } catch (err) {
             console.error('Failed to fetch documents:', err);
+        } finally {
+            setLoadingDocuments(false);
         }
     };
 
@@ -213,7 +253,13 @@ export const LoanDetail: React.FC = () => {
         return (
             <MainLayout>
                 <div className={styles.container}>
-                    <div className={styles.loading}>Loading loan details...</div>
+                    <div className={styles.loadingSkeleton}>
+                        <Skeleton className={styles.skeletonHeader} />
+                        <div className={styles.skeletonContent}>
+                            <Skeleton className={styles.skeletonLeftPanel} />
+                            <Skeleton className={styles.skeletonRightPanel} />
+                        </div>
+                    </div>
                 </div>
             </MainLayout>
         );
@@ -313,12 +359,14 @@ export const LoanDetail: React.FC = () => {
                             >
                                 Notes {notes.length > 0 && `(${notes.length})`}
                             </button>
-                            <button
-                                className={`${styles.tab} ${activeTab === 'documents' ? styles.activeTab : ''}`}
-                                onClick={() => setActiveTab('documents')}
-                            >
-                                Documents {kycDocuments.length > 0 && `(${kycDocuments.length})`}
-                            </button>
+                            {shouldShowDocumentsTab && (
+                                <button
+                                    className={`${styles.tab} ${activeTab === 'documents' ? styles.activeTab : ''}`}
+                                    onClick={() => setActiveTab('documents')}
+                                >
+                                    Document Analysis {kycDocuments.length > 0 && `(${kycDocuments.length})`}
+                                </button>
+                            )}
                             <button
                                 className={`${styles.tab} ${activeTab === 'timeline' ? styles.activeTab : ''}`}
                                 onClick={() => setActiveTab('timeline')}
@@ -466,7 +514,19 @@ export const LoanDetail: React.FC = () => {
                                     </div>
 
                                     <div className={styles.notesList}>
-                                        {notes.length === 0 ? (
+                                        {loadingNotes ? (
+                                            <div className={styles.skeletonContainer}>
+                                                {[1, 2, 3].map((i) => (
+                                                    <div key={i} className={styles.noteCard}>
+                                                        <div className={styles.noteHeader}>
+                                                            <Skeleton className={styles.skeletonText} style={{ width: '120px', height: '16px' }} />
+                                                            <Skeleton className={styles.skeletonText} style={{ width: '150px', height: '16px' }} />
+                                                        </div>
+                                                        <Skeleton className={styles.skeletonText} style={{ width: '100%', height: '60px', marginTop: '8px' }} />
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        ) : notes.length === 0 ? (
                                             <div className={styles.emptyState}>No notes yet</div>
                                         ) : (
                                             notes.map((note) => (
@@ -488,44 +548,131 @@ export const LoanDetail: React.FC = () => {
                                 </div>
                             )}
 
-                            {activeTab === 'documents' && (
+                            {shouldShowDocumentsTab && activeTab === 'documents' && (
                                 <div className={styles.documents}>
-                                    {kycDocuments.length === 0 ? (
-                                        <div className={styles.emptyState}>No documents found</div>
-                                    ) : (
-                                        <div className={styles.documentsGrid}>
-                                            {kycDocuments.map((doc) => (
-                                                <div key={doc.document_id} className={styles.documentCard}>
-                                                    <div className={styles.documentType}>{doc.document_type}</div>
-                                                    <img
-                                                        src={doc.document_url}
-                                                        alt={doc.document_type}
-                                                        className={styles.documentImage}
-                                                        onError={(e) => {
-                                                            (e.target as HTMLImageElement).style.display = 'none';
-                                                        }}
-                                                    />
-                                                    <a
-                                                        href={doc.document_url}
-                                                        target="_blank"
-                                                        rel="noopener noreferrer"
-                                                        className={styles.documentLink}
-                                                    >
-                                                        View Document
-                                                    </a>
-                                                    <div className={styles.documentDate}>
-                                                        Uploaded: {new Date(doc.uploaded_at).toLocaleDateString()}
+                                    {/* Analysis Data Section */}
+                                    {analysisData && Object.keys(analysisData).length > 0 && (
+                                        <div className={styles.analysisSection}>
+                                            <h3 className={styles.analysisTitle}>Extracted Data</h3>
+                                            <div className={styles.analysisData}>
+                                                {Object.entries(analysisData).map(([key, value]) => (
+                                                    <div key={key} className={styles.analysisField}>
+                                                        <span className={styles.analysisKey}>
+                                                            {key.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase())}:
+                                                        </span>
+                                                        <span className={styles.analysisValue}>
+                                                            {typeof value === 'object' && value !== null
+                                                                ? JSON.stringify(value, null, 2)
+                                                                : String(value || 'N/A')}
+                                                        </span>
                                                     </div>
-                                                </div>
-                                            ))}
+                                                ))}
+                                            </div>
                                         </div>
                                     )}
+
+                                    {/* Documents Section */}
+                                    <div className={styles.documentsSection}>
+                                        <div className={styles.sectionHeader}>
+                                            <h3 className={styles.documentsTitle}>Uploaded Documents</h3>
+                                            <button
+                                                className={styles.syncButton}
+                                                onClick={handleSyncAnalysis}
+                                                disabled={analysisStatus === 'syncing'}
+                                            >
+                                                {analysisStatus === 'syncing'
+                                                    ? 'Analyzing...'
+                                                    : analysisStatus === 'success'
+                                                        ? 'Re-analyze'
+                                                        : 'Analyze Documents'}
+                                            </button>
+                                        </div>
+
+                                        {analysisStatus === 'syncing' && (
+                                            <div className={styles.analysisStatus}>
+                                                <span className={styles.statusText}>Analyzing documents, please wait...</span>
+                                            </div>
+                                        )}
+
+                                        {analysisStatus === 'success' && (
+                                            <div className={styles.analysisStatusSuccess}>
+                                                <span className={styles.statusText}>✓ Analysis completed successfully</span>
+                                            </div>
+                                        )}
+
+                                        {analysisStatus === 'error' && (
+                                            <div className={styles.analysisStatusError}>
+                                                <span className={styles.statusText}>✗ Analysis failed. Please try again.</span>
+                                            </div>
+                                        )}
+
+                                        {loadingDocuments ? (
+                                            <div className={styles.documentsGrid}>
+                                                {[1, 2, 3, 4].map((i) => (
+                                                    <div key={i} className={styles.documentCard}>
+                                                        <Skeleton className={styles.skeletonText} style={{ width: '120px', height: '20px' }} />
+                                                        <Skeleton style={{ width: '100%', height: '200px', borderRadius: '4px' }} />
+                                                        <Skeleton className={styles.skeletonText} style={{ width: '100%', height: '36px', borderRadius: '6px' }} />
+                                                        <Skeleton className={styles.skeletonText} style={{ width: '150px', height: '14px' }} />
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        ) : kycDocuments.length === 0 ? (
+                                            <div className={styles.emptyState}>No documents found</div>
+                                        ) : (
+                                            <div className={styles.documentsGrid}>
+                                                {kycDocuments.map((doc) => (
+                                                    <div key={doc.document_id} className={styles.documentCard}>
+                                                        <div className={styles.documentType}>{doc.document_type}</div>
+                                                        <img
+                                                            src={doc.document_url}
+                                                            alt={doc.document_type}
+                                                            className={styles.documentImage}
+                                                            onError={(e) => {
+                                                                (e.target as HTMLImageElement).style.display = 'none';
+                                                            }}
+                                                        />
+                                                        <a
+                                                            href={doc.document_url}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            className={styles.documentLink}
+                                                        >
+                                                            View Document
+                                                        </a>
+                                                        <div className={styles.documentDate}>
+                                                            Uploaded: {new Date(doc.uploaded_at).toLocaleDateString()}
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
                             )}
 
                             {activeTab === 'timeline' && (
                                 <div className={styles.timeline}>
-                                    {timeline.length === 0 ? (
+                                    {loadingTimeline ? (
+                                        <div className={styles.timelineList}>
+                                            {[1, 2, 3, 4].map((i) => (
+                                                <div key={i} className={styles.timelineEvent}>
+                                                    <div className={styles.timelineDot} />
+                                                    <div className={styles.timelineContent}>
+                                                        <div className={styles.timelineHeader}>
+                                                            <Skeleton className={styles.skeletonText} style={{ width: '150px', height: '16px' }} />
+                                                            <Skeleton className={styles.skeletonText} style={{ width: '180px', height: '16px' }} />
+                                                        </div>
+                                                        <Skeleton className={styles.skeletonText} style={{ width: '100%', height: '40px', marginTop: '8px' }} />
+                                                        <div className={styles.timelineMeta} style={{ marginTop: '8px' }}>
+                                                            <Skeleton className={styles.skeletonText} style={{ width: '100px', height: '14px' }} />
+                                                            <Skeleton className={styles.skeletonText} style={{ width: '120px', height: '14px' }} />
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    ) : timeline.length === 0 ? (
                                         <div className={styles.emptyState}>No timeline events found</div>
                                     ) : (
                                         <div className={styles.timelineList}>

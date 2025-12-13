@@ -65,6 +65,7 @@ export interface GetAgentEntitiesRequest {
         sub_status?: string[];
         user_mob_num?: string;
         user_id?: string;
+        assigned_agent_id?: string;
     };
     ranges?: {
         created_at?: [string | null, string | null];

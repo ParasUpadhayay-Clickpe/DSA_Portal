@@ -6,6 +6,7 @@ import { MainLayout } from '@/layouts/MainLayout';
 import { subAgentsApi, entityRoleMappingApi } from '@/api';
 import type { SubAgent } from '@/types/subagents.types';
 import type { RoleTreeNode } from '@/types/entityRoleMapping.types';
+import { AgentGraph } from '@/components/subagents/AgentGraph';
 import styles from './SubAgents.module.css';
 
 interface AgentTreeNodeProps {
@@ -13,9 +14,10 @@ interface AgentTreeNodeProps {
     level: number;
     searchQuery: string;
     forceExpand?: boolean;
+    onAgentClick?: (agent: SubAgent) => void;
 }
 
-const AgentTreeNode: React.FC<AgentTreeNodeProps> = ({ agent, level, searchQuery, forceExpand = false }) => {
+const AgentTreeNode: React.FC<AgentTreeNodeProps> = ({ agent, level, searchQuery, forceExpand = false, onAgentClick }) => {
     const [isExpanded, setIsExpanded] = useState(level === 0 || forceExpand);
     const hasChildren = agent.children && agent.children.length > 0;
 
@@ -103,7 +105,11 @@ const AgentTreeNode: React.FC<AgentTreeNodeProps> = ({ agent, level, searchQuery
                 )}
                 {!hasChildren && <span className={styles.spacer} />}
 
-                <div className={styles.agentInfo}>
+                <div
+                    className={styles.agentInfo}
+                    onClick={() => onAgentClick && onAgentClick(agent)}
+                    style={{ cursor: onAgentClick ? 'pointer' : 'default' }}
+                >
                     <div className={styles.agentMain}>
                         <span className={styles.agentName}>
                             {searchQuery ? highlightText(getName(), searchQuery) : getName()}
@@ -144,6 +150,7 @@ const AgentTreeNode: React.FC<AgentTreeNodeProps> = ({ agent, level, searchQuery
                             level={level + 1}
                             searchQuery={searchQuery}
                             forceExpand={hasMatchingChildren}
+                            onAgentClick={onAgentClick}
                         />
                     ))}
                 </div>
@@ -180,6 +187,21 @@ export const SubAgents: React.FC = () => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [searchQuery, setSearchQuery] = useState('');
+    const [viewMode, setViewMode] = useState<'tree' | 'graph'>('tree');
+
+    const handleAgentClick = (agent: SubAgent) => {
+        const agentName = [agent.fname, agent.mname, agent.lname].filter(Boolean).join(' ') || agent.name || 'Agent';
+        const params = new URLSearchParams();
+        params.set('agentId', agent.agent_id);
+        params.set('agentName', agentName);
+        params.set('agentMobNum', String(agent.mob_num));
+        if (agent.email) {
+            params.set('agentEmail', agent.email);
+        }
+
+        // Open leads page in new tab with agent context
+        window.open(`/leads?${params.toString()}`, '_blank');
+    };
 
     useEffect(() => {
         if (!isAuthenticated) {
@@ -256,13 +278,31 @@ export const SubAgents: React.FC = () => {
                             <p className={styles.roleIndicator}>Viewing: Agent hierarchy</p>
                         )}
                     </div>
-                    <button
-                        className={styles.refreshButton}
-                        onClick={fetchSubAgents}
-                        disabled={loading}
-                    >
-                        {loading ? 'Loading...' : 'Refresh'}
-                    </button>
+                    <div className={styles.headerActions}>
+                        <div className={styles.viewModeToggle}>
+                            <button
+                                className={`${styles.viewModeButton} ${viewMode === 'tree' ? styles.active : ''}`}
+                                onClick={() => setViewMode('tree')}
+                                title="Tree View"
+                            >
+                                📋 Tree
+                            </button>
+                            <button
+                                className={`${styles.viewModeButton} ${viewMode === 'graph' ? styles.active : ''}`}
+                                onClick={() => setViewMode('graph')}
+                                title="Graph View"
+                            >
+                                🕸️ Graph
+                            </button>
+                        </div>
+                        <button
+                            className={styles.refreshButton}
+                            onClick={fetchSubAgents}
+                            disabled={loading}
+                        >
+                            {loading ? 'Loading...' : 'Refresh'}
+                        </button>
+                    </div>
                 </div>
 
                 {error && <div className={styles.errorMessage}>{error}</div>}
@@ -296,6 +336,30 @@ export const SubAgents: React.FC = () => {
                     <div className={styles.emptyContainer}>
                         <p>No sub agents found</p>
                     </div>
+                ) : viewMode === 'graph' ? (
+                    <AgentGraph
+                        agents={subAgents}
+                        searchQuery={searchQuery}
+                        onNodeClick={(agentId) => {
+                            // Find the agent and open their dashboard
+                            const findAgent = (agents: SubAgent[]): SubAgent | null => {
+                                for (const agent of agents) {
+                                    if (agent.agent_id === agentId) {
+                                        return agent;
+                                    }
+                                    if (agent.children && agent.children.length > 0) {
+                                        const found = findAgent(agent.children);
+                                        if (found) return found;
+                                    }
+                                }
+                                return null;
+                            };
+                            const agent = findAgent(subAgents);
+                            if (agent) {
+                                handleAgentClick(agent);
+                            }
+                        }}
+                    />
                 ) : (
                     <div className={styles.treeContainer}>
                         {subAgents.map((agent) => (
@@ -304,6 +368,7 @@ export const SubAgents: React.FC = () => {
                                 agent={agent}
                                 level={0}
                                 searchQuery={searchQuery}
+                                onAgentClick={handleAgentClick}
                             />
                         ))}
                         {searchQuery && (

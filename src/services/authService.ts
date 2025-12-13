@@ -87,8 +87,18 @@ export class AuthService {
     /**
      * Logout user
      * Clears all authentication-related localStorage keys and cookies (matching auth_api.md)
+     * Note: Table configurations (table_config_*) are preserved across logout
      */
     logout(): void {
+        // Save table configurations before clearing (they use keys starting with 'table_config_')
+        const tableConfigs: Record<string, string> = {};
+        for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            if (key && key.startsWith('table_config_')) {
+                tableConfigs[key] = localStorage.getItem(key) || '';
+            }
+        }
+
         // Clear encrypted tokens
         localStorage.removeItem('auth_token');
 
@@ -113,6 +123,15 @@ export class AuthService {
         localStorage.removeItem('otp_unique_id');
         localStorage.removeItem('otp_reference_id');
         localStorage.removeItem('otp_mobile');
+
+        // Clear role-related data
+        localStorage.removeItem('selected_role_id');
+        localStorage.removeItem('selected_role_type');
+
+        // Restore table configurations
+        Object.entries(tableConfigs).forEach(([key, value]) => {
+            localStorage.setItem(key, value);
+        });
 
         // Clear all cookies
         clearAllCookies();

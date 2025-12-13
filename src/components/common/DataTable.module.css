@@ -41,6 +41,29 @@
     border-color: #d1d5db;
 }
 
+.saveConfigButton {
+    padding: 6px 12px;
+    background: #1565d8;
+    color: #ffffff;
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    white-space: nowrap;
+}
+
+.saveConfigButton:hover:not(:disabled) {
+    background: #0d4a9e;
+}
+
+.saveConfigButton:disabled {
+    background: #9ca3af;
+    cursor: not-allowed;
+    opacity: 0.7;
+}
+
 .viewMenuContainer {
     position: relative;
 }
@@ -255,7 +278,6 @@
     background: #f9fafb;
 }
 
-.loadingCell,
 .emptyCell {
     padding: 48px 16px;
     text-align: center;
@@ -263,8 +285,20 @@
     font-size: 14px;
 }
 
-.loadingSpinner {
-    display: inline-block;
+.skeletonRow {
+    border-bottom: 1px solid #f3f4f6;
+}
+
+.skeletonRow:hover {
+    background: transparent;
+}
+
+.skeletonCell {
+    padding: 12px 16px;
+}
+
+.skeletonText {
+    border-radius: 4px;
 }
 
 .pagination {

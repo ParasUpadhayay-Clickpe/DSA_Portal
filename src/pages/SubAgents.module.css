@@ -7,8 +7,48 @@
 .pageHeader {
     display: flex;
     justify-content: space-between;
-    align-items: center;
+    align-items: flex-start;
     margin-bottom: 24px;
+}
+
+.headerActions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.viewModeToggle {
+    display: flex;
+    gap: 0;
+    background: #f3f4f6;
+    border-radius: 6px;
+    padding: 4px;
+}
+
+.viewModeButton {
+    padding: 8px 16px;
+    background: transparent;
+    border: none;
+    border-radius: 4px;
+    font-size: 14px;
+    font-weight: 500;
+    color: #6b7280;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.viewModeButton:hover {
+    color: #374151;
+    background: #e5e7eb;
+}
+
+.viewModeButton.active {
+    background: #ffffff;
+    color: #1565d8;
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
 }
 
 .pageTitle {

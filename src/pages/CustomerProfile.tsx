@@ -5,6 +5,7 @@ import { MainLayout } from '@/layouts/MainLayout';
 import { userProfileApi, timelineApi } from '@/api';
 import type { GetUserProfileDataResponse } from '@/types/userProfile.types';
 import type { TimelineEvent, GetUserTimelineResponse } from '@/types/timeline.types';
+import { Toast, Skeleton } from '@/components/common';
 import styles from './CustomerProfile.module.css';
 
 type TabType = 'details' | 'timeline';
@@ -17,11 +18,13 @@ export const CustomerProfile: React.FC = () => {
     const [activeTab, setActiveTab] = useState<TabType>('details');
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
+    const [showToast, setShowToast] = useState(false);
 
     // Get lead from route state (passed from Leads page)
     const leadFromState = location.state?.lead;
     const [profileData, setProfileData] = useState<GetUserProfileDataResponse['response'] | null>(null);
     const [timeline, setTimeline] = useState<TimelineEvent[]>([]);
+    const [loadingTimeline, setLoadingTimeline] = useState(false);
 
     useEffect(() => {
         if (!isAuthenticated) {
@@ -68,6 +71,7 @@ export const CustomerProfile: React.FC = () => {
     const fetchTimeline = async () => {
         if (!customerId) return;
 
+        setLoadingTimeline(true);
         try {
             const response = await timelineApi.getUserTimeline({
                 query_name: 'cp_mfl_user_timeline',
@@ -78,12 +82,14 @@ export const CustomerProfile: React.FC = () => {
             }
         } catch (err) {
             console.error('Failed to fetch timeline:', err);
+        } finally {
+            setLoadingTimeline(false);
         }
     };
 
     const copyToClipboard = (text: string) => {
         navigator.clipboard.writeText(text);
-        // Could add toast notification here
+        setShowToast(true);
     };
 
     const getStatusColor = (status?: string) => {
@@ -109,7 +115,42 @@ export const CustomerProfile: React.FC = () => {
         return (
             <MainLayout>
                 <div className={styles.container}>
-                    <div className={styles.loading}>Loading customer profile...</div>
+                    <Skeleton className={styles.skeletonBackButton} style={{ width: '150px', height: '40px', marginBottom: '20px' }} />
+                    <div className={styles.mainLayout}>
+                        <div className={styles.leftPanel}>
+                            <div className={styles.customerCard}>
+                                <div className={styles.profileSection}>
+                                    <Skeleton className={styles.skeletonAvatar} style={{ width: '80px', height: '80px', borderRadius: '50%' }} />
+                                    <Skeleton style={{ width: '100px', height: '24px', borderRadius: '12px', marginTop: '8px' }} />
+                                    <Skeleton style={{ width: '150px', height: '24px', marginTop: '12px' }} />
+                                    <Skeleton style={{ width: '120px', height: '16px', marginTop: '8px' }} />
+                                </div>
+                                <div className={styles.contactInfo}>
+                                    <Skeleton style={{ width: '100%', height: '40px', marginBottom: '8px' }} />
+                                    <Skeleton style={{ width: '100%', height: '40px' }} />
+                                </div>
+                            </div>
+                        </div>
+                        <div className={styles.rightPanel}>
+                            <div className={styles.tabs}>
+                                <Skeleton style={{ width: '100px', height: '40px', borderRadius: '6px' }} />
+                                <Skeleton style={{ width: '120px', height: '40px', borderRadius: '6px' }} />
+                            </div>
+                            <div className={styles.content}>
+                                <div className={styles.details}>
+                                    <Skeleton style={{ width: '200px', height: '24px', marginBottom: '16px' }} />
+                                    <div className={styles.detailsGrid}>
+                                        {[1, 2, 3, 4, 5, 6].map((i) => (
+                                            <div key={i} className={styles.detailRow}>
+                                                <Skeleton style={{ width: '120px', height: '20px' }} />
+                                                <Skeleton style={{ width: '150px', height: '20px' }} />
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </MainLayout>
         );
@@ -153,6 +194,11 @@ export const CustomerProfile: React.FC = () => {
 
     return (
         <MainLayout>
+            <Toast
+                message="Copied!"
+                show={showToast}
+                onClose={() => setShowToast(false)}
+            />
             <div className={styles.container}>
                 <button
                     className={styles.backButton}
@@ -174,43 +220,34 @@ export const CustomerProfile: React.FC = () => {
                                     {status}
                                 </div>
                                 <h2 className={styles.customerName}>{userName}</h2>
-                                <div className={styles.customerId}>
+                                <div
+                                    className={styles.customerId}
+                                    onClick={() => copyToClipboard(customerId || '')}
+                                    title="Click to copy Customer ID"
+                                >
                                     ID: {customerId}
-                                    <button
-                                        className={styles.copyButton}
-                                        onClick={() => copyToClipboard(customerId || '')}
-                                        title="Copy Customer ID"
-                                    >
-                                        📋
-                                    </button>
                                 </div>
                             </div>
 
                             <div className={styles.contactInfo}>
                                 {profileData?.mob_num && (
-                                    <div className={styles.contactItem}>
+                                    <div
+                                        className={styles.contactItem}
+                                        onClick={() => copyToClipboard(String(profileData.mob_num))}
+                                        title="Click to copy mobile number"
+                                    >
                                         <span className={styles.contactIcon}>📞</span>
                                         <span>{profileData.mob_num}</span>
-                                        <button
-                                            className={styles.copyButton}
-                                            onClick={() => copyToClipboard(String(profileData.mob_num))}
-                                            title="Copy"
-                                        >
-                                            📋
-                                        </button>
                                     </div>
                                 )}
                                 {profileData?.email && (
-                                    <div className={styles.contactItem}>
+                                    <div
+                                        className={styles.contactItem}
+                                        onClick={() => copyToClipboard(profileData.email || '')}
+                                        title="Click to copy email"
+                                    >
                                         <span className={styles.contactIcon}>✉️</span>
                                         <span>{profileData.email}</span>
-                                        <button
-                                            className={styles.copyButton}
-                                            onClick={() => copyToClipboard(profileData.email || '')}
-                                            title="Copy"
-                                        >
-                                            📋
-                                        </button>
                                     </div>
                                 )}
                             </div>
@@ -370,7 +407,26 @@ export const CustomerProfile: React.FC = () => {
 
                             {activeTab === 'timeline' && (
                                 <div className={styles.timeline}>
-                                    {timeline.length === 0 ? (
+                                    {loadingTimeline ? (
+                                        <div className={styles.timelineList}>
+                                            {[1, 2, 3, 4].map((i) => (
+                                                <div key={i} className={styles.timelineEvent}>
+                                                    <div className={styles.timelineDot} />
+                                                    <div className={styles.timelineContent}>
+                                                        <div className={styles.timelineHeader}>
+                                                            <Skeleton style={{ width: '150px', height: '16px' }} />
+                                                            <Skeleton style={{ width: '180px', height: '16px' }} />
+                                                        </div>
+                                                        <Skeleton style={{ width: '100%', height: '40px', marginTop: '8px' }} />
+                                                        <div className={styles.timelineMeta} style={{ marginTop: '8px' }}>
+                                                            <Skeleton style={{ width: '100px', height: '14px' }} />
+                                                            <Skeleton style={{ width: '120px', height: '14px' }} />
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    ) : timeline.length === 0 ? (
                                         <div className={styles.emptyState}>No timeline events found</div>
                                     ) : (
                                         <div className={styles.timelineList}>

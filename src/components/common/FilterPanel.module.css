@@ -115,10 +115,19 @@
     color: #6b7280;
 }
 
+.dateRangeField {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.dateRangeField .dateRange {
+    margin-top: 4px;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
     .filterGrid {
         grid-template-columns: 1fr;
     }
 }
-

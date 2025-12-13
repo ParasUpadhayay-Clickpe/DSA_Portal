@@ -1,5 +1,6 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import type { ReactNode } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useRole } from '@/contexts/RoleContext';
 import { MainLayout } from '@/layouts/MainLayout';
@@ -27,8 +28,13 @@ const SUB_STATUS_OPTIONS = [
 
 export const Loans: React.FC = () => {
     const navigate = useNavigate();
+    const [searchParams] = useSearchParams();
     const { isAuthenticated } = useAuth();
     const { selectedRole } = useRole();
+
+    // Get agent context from URL parameters (when viewing sub-agent's loans)
+    const agentIdOverride = searchParams.get('agentId') || null;
+    const agentName = searchParams.get('agentName') || null;
     const [loans, setLoans] = useState<Loan[]>([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
@@ -44,20 +50,71 @@ export const Loans: React.FC = () => {
 
     // Filters
     const [filters, setFilters] = useState<Record<string, unknown>>({
-        loan_id: '',
         sub_status: null,
-        mob_num: '',
-        user_id: '',
-        created_at: [null, null],
-        updated_at: [null, null],
-        text: '',
+        search_text: '',
+        search_type: null, // 'loan_id', 'mob_num', 'user_id', 'name'
+        date_range_field: null, // Field selector: 'created_at' or 'updated_at'
+        date_range: null, // Date range: [start, end]
+        assigned_to_agent: null, // For Document Verifier: filter by assigned agent
     });
+
+    // Available agents for Document Verifier role
+    const [availableAgents, setAvailableAgents] = useState<Array<{ role_id: string; agent_name: string; agent_id: string }>>([]);
+    const [loadingAgents, setLoadingAgents] = useState(false);
 
     useEffect(() => {
         if (!isAuthenticated) {
             navigate('/agent-login');
         }
     }, [isAuthenticated, navigate]);
+
+    // Fetch available agents for Document Verifier role
+    useEffect(() => {
+        const fetchAvailableAgents = async () => {
+            if (!selectedRole || selectedRole.role_type !== 'DOCUMENT_VERIFIER') {
+                setAvailableAgents([]);
+                return;
+            }
+
+            const agentId = localStorage.getItem('agent_id') || localStorage.getItem('agentId');
+            if (!agentId) return;
+
+            setLoadingAgents(true);
+            try {
+                const response = await entityRoleMappingApi.getAgents({
+                    agent_id: agentId,
+                    role_type: 'DOCUMENT_VERIFIER',
+                });
+
+                if (response.status === 'Success' && response.response) {
+                    // Flatten the tree to get all agents
+                    const flattenAgents = (nodes: typeof response.response.tree): Array<{ role_id: string; agent_name: string; agent_id: string }> => {
+                        const agents: Array<{ role_id: string; agent_name: string; agent_id: string }> = [];
+                        nodes.forEach((node) => {
+                            agents.push({
+                                role_id: node.role_id,
+                                agent_name: node.agent_name,
+                                agent_id: node.agent_id,
+                            });
+                            if (node.children && node.children.length > 0) {
+                                agents.push(...flattenAgents(node.children));
+                            }
+                        });
+                        return agents;
+                    };
+
+                    const agents = flattenAgents(response.response.tree);
+                    setAvailableAgents(agents);
+                }
+            } catch (err) {
+                console.error('Failed to fetch available agents:', err);
+            } finally {
+                setLoadingAgents(false);
+            }
+        };
+
+        fetchAvailableAgents();
+    }, [selectedRole]);
 
     const fetchLoans = useCallback(async () => {
         const agentId = localStorage.getItem('agent_id') || localStorage.getItem('agentId');
@@ -70,11 +127,18 @@ export const Loans: React.FC = () => {
         setError('');
 
         try {
+            // Get selected date range field and values (used in both branches)
+            const dateRangeField = (filters.date_range_field as string) || null;
+            const dateRange: [string | null, string | null] = Array.isArray(filters.date_range) && filters.date_range.length === 2
+                ? [filters.date_range[0] as string | null, filters.date_range[1] as string | null]
+                : [null, null];
+
+            // Set the appropriate range based on selected field
+            const createdAtRange: [string | null, string | null] = dateRangeField === 'created_at' ? dateRange : [null, null];
+            const updatedAtRange: [string | null, string | null] = dateRangeField === 'updated_at' ? dateRange : [null, null];
+
             // If a role is selected, use get-agent-entity API
             if (selectedRole) {
-                const createdAtRange: [string | null, string | null] = Array.isArray(filters.created_at) && filters.created_at.length === 2
-                    ? [filters.created_at[0] as string | null, filters.created_at[1] as string | null]
-                    : [null, null];
 
                 const sortByValue: { [key: string]: 1 | -1 } | undefined = sortBy
                     ? {
@@ -96,20 +160,28 @@ export const Loans: React.FC = () => {
                                 : filters.sub_status
                                     ? [filters.sub_status as string]
                                     : undefined,
-                        user_mob_num: (filters.mob_num as string) || undefined,
-                        user_id: (filters.user_id as string) || undefined,
+                        user_mob_num: filters.search_type === 'mob_num' && filters.search_text
+                            ? (filters.search_text as string)
+                            : undefined,
+                        user_id: filters.search_type === 'user_id' && filters.search_text
+                            ? (filters.search_text as string)
+                            : undefined,
+                        assigned_agent_id: filters.assigned_to_agent
+                            ? (filters.assigned_to_agent as string)
+                            : undefined,
                     },
                     ranges: {
                         created_at: createdAtRange,
+                        updated_at: updatedAtRange,
                     },
-                    text: (filters.text as string) || undefined,
-                    search_columns: (filters.text as string) ? ['fname', 'mname', 'lname'] : undefined,
+                    text: (filters.search_type === 'name' && filters.search_text) ? (filters.search_text as string) : undefined,
+                    search_columns: (filters.search_type === 'name' && filters.search_text) ? ['fname', 'mname', 'lname'] : undefined,
                 };
 
                 const entityResponse = await entityRoleMappingApi.getAgentEntities(entityRequest);
 
                 if (entityResponse.status === 'Success' && entityResponse.response) {
-                    // Convert AgentEntity to Loan format
+                    // Convert AgentEntity to Loan format, preserving all fields
                     const convertedLoans: Loan[] = entityResponse.response.response.map((entity: AgentEntity) => ({
                         loan_id: entity.loan_id,
                         user_id: entity.user_id,
@@ -127,7 +199,14 @@ export const Loans: React.FC = () => {
                         loan_tenure: entity.loan_tenure,
                         payment_frequency: entity.payment_frequency,
                         agent_name: entity.agent_name,
-                    }));
+                        // Include all additional AgentEntity fields
+                        assignment_date: entity.assignment_date,
+                        assigned_by: entity.assigned_by,
+                        assigned_agent_id: entity.assigned_agent_id,
+                        assigned_to_agent: entity.assigned_to_agent,
+                        // Spread any other fields that might exist
+                        ...(entity as unknown as Record<string, unknown>),
+                    } as Loan));
                     setLoans(convertedLoans);
                     setTotal(entityResponse.response.pagination?.total_records || convertedLoans.length);
                 } else {
@@ -135,19 +214,17 @@ export const Loans: React.FC = () => {
                 }
             } else {
                 // Default: Use regular agent loan API
-                const createdAtRange: [string | null, string | null] = Array.isArray(filters.created_at) && filters.created_at.length === 2
-                    ? [filters.created_at[0] as string | null, filters.created_at[1] as string | null]
-                    : [null, null];
 
-                const updatedAtRange: [string | null, string | null] = Array.isArray(filters.updated_at) && filters.updated_at.length === 2
-                    ? [filters.updated_at[0] as string | null, filters.updated_at[1] as string | null]
-                    : [null, null];
 
                 const sortByValue: { [key: string]: 1 | -1 } | undefined = sortBy
                     ? {
                         [sortBy]: sortOrder === 'asc' ? 1 : -1,
                     }
                     : undefined;
+
+                // Build filters based on search type
+                const searchText = (filters.search_text as string) || '';
+                const searchType = filters.search_type as string;
 
                 const request = {
                     query_type: 'agent_all_loan' as const,
@@ -160,18 +237,18 @@ export const Loans: React.FC = () => {
                     },
                     sort_by: sortByValue,
                     filters: {
-                        loan_id: (filters.loan_id as string) || undefined,
+                        loan_id: searchType === 'loan_id' && searchText ? searchText : undefined,
                         sub_status:
                             filters.sub_status && Array.isArray(filters.sub_status)
                                 ? (filters.sub_status as string[])
                                 : filters.sub_status
                                     ? [filters.sub_status as string]
                                     : undefined,
-                        mob_num: (filters.mob_num as string) || undefined,
-                        'l.user_id': (filters.user_id as string) || undefined,
+                        mob_num: searchType === 'mob_num' && searchText ? searchText : undefined,
+                        'l.user_id': searchType === 'user_id' && searchText ? searchText : undefined,
                     },
-                    text: (filters.text as string) || undefined,
-                    search_columns: (filters.text as string) ? ['fname', 'mname', 'lname'] : undefined,
+                    text: (searchType === 'name' && searchText) ? searchText : undefined,
+                    search_columns: (searchType === 'name' && searchText) ? ['fname', 'mname', 'lname'] : undefined,
                 };
 
                 const response = await loansApi.getLoanDetails(request);
@@ -212,15 +289,46 @@ export const Loans: React.FC = () => {
 
     const handleResetFilters = () => {
         setFilters({
-            loan_id: '',
             sub_status: null,
-            mob_num: '',
-            user_id: '',
-            created_at: [null, null],
-            updated_at: [null, null],
-            text: '',
+            search_text: '',
+            search_type: null,
+            date_range_field: null,
+            date_range: null,
+            assigned_to_agent: null,
         });
         setPage(1);
+    };
+
+    // Handle changing assigned agent
+    const [changingAssignment, setChangingAssignment] = useState<string | null>(null);
+    const [newAssignedAgent, setNewAssignedAgent] = useState<string>('');
+
+    const handleChangeAssignment = async (loanId: string, currentAssignedRoleId: string | undefined) => {
+        if (!selectedRole || !newAssignedAgent) return;
+
+        setChangingAssignment(loanId);
+        try {
+            const response = await entityRoleMappingApi.changeEntityMapping({
+                entity_id: loanId,
+                entity_type: 'loan_id',
+                role_type: selectedRole.role_type,
+                assigned_by: selectedRole.role_id, // Current user's role ID
+                assigned_to: newAssignedAgent, // New agent's role ID
+            });
+
+            if (response.status === 'Success') {
+                // Refresh the loans list
+                await fetchLoans();
+                setNewAssignedAgent('');
+                setChangingAssignment(null);
+            } else {
+                setError(response.message || 'Failed to change assignment');
+                setChangingAssignment(null);
+            }
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'Failed to change assignment');
+            setChangingAssignment(null);
+        }
     };
 
     const handleExportToExcel = () => {
@@ -229,7 +337,7 @@ export const Loans: React.FC = () => {
         }
 
         // Convert columns to export format, handling React node renders
-        const exportColumns: ExportColumn<Loan>[] = columns.map((col) => {
+        const exportColumns: ExportColumn<Loan>[] = allColumns.map((col) => {
             if (!col.render) {
                 return {
                     key: col.key,
@@ -280,12 +388,26 @@ export const Loans: React.FC = () => {
         exportToExcel(loans as unknown as Record<string, unknown>[], exportColumns as unknown as ExportColumn<Record<string, unknown>>[], 'loans');
     };
 
+    const SEARCH_TYPE_OPTIONS = [
+        { label: 'Loan ID', value: 'loan_id' },
+        { label: 'Mobile Number', value: 'mob_num' },
+        { label: 'User ID', value: 'user_id' },
+        { label: 'Name', value: 'name' },
+    ];
+
+    // Build filter configs - add Assigned To filter only for Document Verifier role
     const filterConfigs: FilterConfig[] = [
         {
-            key: 'loan_id',
-            label: 'Loan ID',
+            key: 'search_type',
+            label: 'Search Type',
+            type: 'select',
+            options: SEARCH_TYPE_OPTIONS,
+        },
+        {
+            key: 'search_text',
+            label: 'Search',
             type: 'text',
-            placeholder: 'Enter loan ID...',
+            placeholder: 'Enter search text...',
         },
         {
             key: 'sub_status',
@@ -293,33 +415,30 @@ export const Loans: React.FC = () => {
             type: 'select',
             options: SUB_STATUS_OPTIONS,
         },
+        ...(selectedRole?.role_type === 'DOCUMENT_VERIFIER'
+            ? [
+                {
+                    key: 'assigned_to_agent',
+                    label: 'Assigned To',
+                    type: 'select',
+                    options: [
+                        { label: 'All Agents', value: null },
+                        ...availableAgents.map((agent) => ({
+                            label: agent.agent_name,
+                            value: agent.role_id,
+                        })),
+                    ],
+                } as FilterConfig,
+            ]
+            : []),
         {
-            key: 'mob_num',
-            label: 'Mobile Number',
-            type: 'text',
-            placeholder: 'Enter mobile number...',
-        },
-        {
-            key: 'user_id',
-            label: 'User ID',
-            type: 'text',
-            placeholder: 'Enter user ID...',
-        },
-        {
-            key: 'created_at',
-            label: 'Created At',
-            type: 'dateRange',
-        },
-        {
-            key: 'updated_at',
-            label: 'Updated At',
-            type: 'dateRange',
-        },
-        {
-            key: 'text',
-            label: 'Search Name',
-            type: 'text',
-            placeholder: 'Search by name...',
+            key: 'date_range',
+            label: 'Date Range',
+            type: 'dateRangeField',
+            dateRangeFields: [
+                { label: 'Created At', value: 'created_at' },
+                { label: 'Updated At', value: 'updated_at' },
+            ],
         },
     ];
 
@@ -486,7 +605,189 @@ export const Loans: React.FC = () => {
             sortable: true,
             defaultVisible: false,
         },
+        // Add Assigned Agent column for Document Verifier role
+        ...(selectedRole?.role_type === 'DOCUMENT_VERIFIER'
+            ? [
+                {
+                    key: 'assigned_to_agent',
+                    label: 'Assigned To',
+                    sortable: true,
+                    defaultVisible: true,
+                    render: (value, row): ReactNode => {
+                        const currentAssignedRoleId = (row as unknown as Record<string, unknown>).assigned_agent_id as string | undefined;
+                        const isChanging = changingAssignment === row.loan_id;
+
+                        if (isChanging) {
+                            return (
+                                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                                    <select
+                                        value={newAssignedAgent}
+                                        onChange={(e) => setNewAssignedAgent(e.target.value)}
+                                        style={{
+                                            padding: '4px 8px',
+                                            border: '1px solid #d1d5db',
+                                            borderRadius: '4px',
+                                            fontSize: '14px',
+                                        }}
+                                        onClick={(e) => e.stopPropagation()}
+                                    >
+                                        <option value="">Select Agent</option>
+                                        {availableAgents.map((agent) => (
+                                            <option key={agent.role_id} value={agent.role_id}>
+                                                {agent.agent_name}
+                                            </option>
+                                        ))}
+                                    </select>
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            if (newAssignedAgent) {
+                                                handleChangeAssignment(row.loan_id, currentAssignedRoleId);
+                                            }
+                                        }}
+                                        disabled={!newAssignedAgent}
+                                        style={{
+                                            padding: '4px 12px',
+                                            background: '#1565d8',
+                                            color: '#ffffff',
+                                            border: 'none',
+                                            borderRadius: '4px',
+                                            fontSize: '12px',
+                                            cursor: newAssignedAgent ? 'pointer' : 'not-allowed',
+                                            opacity: newAssignedAgent ? 1 : 0.5,
+                                        }}
+                                    >
+                                        Save
+                                    </button>
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            setNewAssignedAgent('');
+                                            setChangingAssignment(null);
+                                        }}
+                                        style={{
+                                            padding: '4px 12px',
+                                            background: '#6b7280',
+                                            color: '#ffffff',
+                                            border: 'none',
+                                            borderRadius: '4px',
+                                            fontSize: '12px',
+                                            cursor: 'pointer',
+                                        }}
+                                    >
+                                        Cancel
+                                    </button>
+                                </div>
+                            );
+                        }
+
+                        const assignedAgent = availableAgents.find((a) => a.role_id === currentAssignedRoleId);
+                        return (
+                            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                                <span>{assignedAgent?.agent_name || (value ? String(value) : 'Unassigned')}</span>
+                                <button
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        setChangingAssignment(row.loan_id);
+                                        setNewAssignedAgent(currentAssignedRoleId || '');
+                                    }}
+                                    style={{
+                                        padding: '4px 8px',
+                                        background: '#f3f4f6',
+                                        color: '#374151',
+                                        border: '1px solid #d1d5db',
+                                        borderRadius: '4px',
+                                        fontSize: '12px',
+                                        cursor: 'pointer',
+                                    }}
+                                    title="Change assignment"
+                                >
+                                    Change
+                                </button>
+                            </div>
+                        );
+                    },
+                } as Column<Loan>,
+            ]
+            : []),
     ];
+
+    // Dynamically generate columns for all other Loan fields not already defined
+    const dynamicColumns = useMemo(() => {
+        if (loans.length === 0) return [];
+
+        // Get all keys from the first loan
+        const allKeys = Object.keys(loans[0] || {}) as (keyof Loan)[];
+
+        // Get keys that are already defined in the static columns
+        const definedKeys = new Set(columns.map(col => col.key));
+
+        // Filter out keys that are already defined
+        const remainingKeys = allKeys.filter(key => !definedKeys.has(String(key)));
+
+        // Generate column definitions for remaining keys
+        return remainingKeys.map(key => {
+            const label = String(key)
+                .replace(/_/g, ' ')
+                .replace(/\b\w/g, l => l.toUpperCase());
+
+            // Determine render function based on key patterns
+            let render: ((value: unknown, row: Loan) => React.ReactNode) | undefined;
+
+            // Amount fields
+            if (key.toString().includes('_amt') || key.toString().includes('amount') || key === 'income' || key === 'total_pre_disbursal_charges') {
+                render = (value) => {
+                    if (!value) return '-';
+                    return `₹${Number(value).toLocaleString()}`;
+                };
+            }
+            // Percentage fields
+            else if (key.toString().includes('percentage') || key.toString().includes('rate') || key.toString().includes('apr')) {
+                render = (value) => {
+                    if (!value) return '-';
+                    return `${String(value)}%`;
+                };
+            }
+            // Date fields
+            else if (key.toString().includes('_date') || key.toString().includes('created_at') || key.toString().includes('updated_at') || key === 'dob') {
+                render = (value) => {
+                    if (!value) return '-';
+                    try {
+                        return new Date(value as string).toLocaleDateString();
+                    } catch {
+                        return String(value);
+                    }
+                };
+            }
+            // Boolean fields
+            else if (key === 'is_active' || key === 'is_politically_exposed' || key === 'salaried') {
+                render = (value) => {
+                    if (value === null || value === undefined) return '-';
+                    return value ? 'Yes' : 'No';
+                };
+            }
+            // Default: just display the value
+            else {
+                render = (value) => {
+                    if (value === null || value === undefined) return '-';
+                    return String(value);
+                };
+            }
+
+            return {
+                key: String(key),
+                label,
+                sortable: true,
+                defaultVisible: false,
+                render,
+            } as Column<Loan>;
+        });
+    }, [loans]);
+
+    // Combine static and dynamic columns
+    const allColumns = useMemo(() => {
+        return [...columns, ...dynamicColumns];
+    }, [columns, dynamicColumns]);
 
     if (!isAuthenticated) {
         return null;
@@ -496,7 +797,19 @@ export const Loans: React.FC = () => {
         <MainLayout>
             <div className={styles.pageContainer}>
                 <div className={styles.pageHeader}>
-                    <h1 className={styles.pageTitle}>Loans</h1>
+                    <div>
+                        <h1 className={styles.pageTitle}>
+                            Loans
+                            {agentName && (
+                                <span className={styles.agentContext}> - {agentName}</span>
+                            )}
+                        </h1>
+                        {agentName && (
+                            <p className={styles.agentContextInfo}>
+                                Viewing loans for: {agentName} (ID: {agentIdOverride})
+                            </p>
+                        )}
+                    </div>
                     <button
                         className={styles.exportButton}
                         onClick={() => handleExportToExcel()}
@@ -516,20 +829,11 @@ export const Loans: React.FC = () => {
                     onReset={handleResetFilters}
                 />
 
-                <div className={styles.searchBar}>
-                    <input
-                        type="text"
-                        placeholder="Search titles..."
-                        className={styles.searchInput}
-                        value={(filters.text as string) || ''}
-                        onChange={(e) => handleFilterChange('text', e.target.value)}
-                    />
-                </div>
-
                 <DataTable
                     data={loans}
-                    columns={columns}
+                    columns={allColumns}
                     loading={loading}
+                    tableId={selectedRole ? `loans_${selectedRole.role_type}` : 'loans'}
                     pagination={{
                         page,
                         pageSize,
@@ -545,7 +849,14 @@ export const Loans: React.FC = () => {
                         sortOrder,
                         onSort: handleSort,
                     }}
-                    onRowClick={(row) => navigate(`/loans/${row.loan_id}`, { state: { loan: row } })}
+                    onRowClick={(row) => {
+                        // Preserve agent context when navigating to loan detail
+                        const params = new URLSearchParams();
+                        if (agentIdOverride) params.set('agentId', agentIdOverride);
+                        if (agentName) params.set('agentName', agentName);
+                        const queryString = params.toString();
+                        navigate(`/loans/${row.loan_id}${queryString ? `?${queryString}` : ''}`, { state: { loan: row } });
+                    }}
                     emptyMessage="No loans found"
                 />
             </div>

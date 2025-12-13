@@ -1,0 +1,59 @@
+.graphContainer {
+    width: 100%;
+    height: 600px;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    background: #ffffff;
+    overflow: hidden;
+    position: relative;
+}
+
+.tooltip {
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    padding: 8px 12px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    font-size: 12px;
+    min-width: 200px;
+}
+
+.tooltipName {
+    font-weight: 600;
+    color: #111827;
+    margin-bottom: 4px;
+    font-size: 13px;
+}
+
+.tooltipId {
+    color: #6b7280;
+    margin-bottom: 2px;
+    font-size: 11px;
+}
+
+.tooltipMobile {
+    color: #6b7280;
+    margin-bottom: 2px;
+    font-size: 11px;
+}
+
+.tooltipEmail {
+    color: #6b7280;
+    margin-bottom: 2px;
+    font-size: 11px;
+}
+
+.tooltipStatus {
+    color: #6b7280;
+    font-size: 11px;
+    margin-top: 4px;
+    padding-top: 4px;
+    border-top: 1px solid #e5e7eb;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .graphContainer {
+        height: 400px;
+    }
+}

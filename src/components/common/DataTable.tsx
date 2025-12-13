@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { Skeleton } from './Skeleton';
 import styles from './DataTable.module.css';
 
 export interface Column<T> {
@@ -13,6 +14,7 @@ export interface DataTableProps<T> {
     data: T[];
     columns: Column<T>[];
     loading?: boolean;
+    tableId?: string; // Unique identifier for saving/loading configuration
     pagination?: {
         page: number;
         pageSize: number;
@@ -33,20 +35,89 @@ export function DataTable<T extends Record<string, any> = Record<string, unknown
     data,
     columns,
     loading = false,
+    tableId,
     pagination,
     sorting,
     onRowClick,
     emptyMessage = 'No data available',
 }: DataTableProps<T>) {
+    // Load saved configuration from localStorage
+    const loadSavedConfig = (): { visibleColumns: Set<string>; columnOrder: string[] } | null => {
+        if (!tableId) return null;
+        try {
+            const saved = localStorage.getItem(`table_config_${tableId}`);
+            if (saved) {
+                const config = JSON.parse(saved);
+                return {
+                    visibleColumns: new Set(config.visibleColumns || []),
+                    columnOrder: config.columnOrder || columns.map((col) => col.key),
+                };
+            }
+        } catch (err) {
+            console.error('Failed to load saved table configuration:', err);
+        }
+        return null;
+    };
+
+    const savedConfig = loadSavedConfig();
     const [visibleColumns, setVisibleColumns] = useState<Set<string>>(() => {
+        if (savedConfig) {
+            // Validate saved columns against current columns
+            const validColumns = new Set(columns.map((col) => col.key));
+            const savedVisible = new Set(
+                Array.from(savedConfig.visibleColumns).filter((key) => validColumns.has(key))
+            );
+            // If no valid saved columns, fall back to defaults
+            if (savedVisible.size === 0) {
+                return new Set(columns.filter((col) => col.defaultVisible !== false).map((col) => col.key));
+            }
+            return savedVisible;
+        }
         return new Set(columns.filter((col) => col.defaultVisible !== false).map((col) => col.key));
     });
     const [showColumnMenu, setShowColumnMenu] = useState(false);
     const [columnOrder, setColumnOrder] = useState<string[]>(() => {
+        if (savedConfig) {
+            // Validate saved order against current columns
+            const validColumns = new Set(columns.map((col) => col.key));
+            const savedOrder = savedConfig.columnOrder.filter((key) => validColumns.has(key));
+            // Add any new columns that weren't in saved config
+            const newColumns = columns
+                .map((col) => col.key)
+                .filter((key) => !savedOrder.includes(key));
+            return [...savedOrder, ...newColumns];
+        }
         return columns.map((col) => col.key);
     });
     const [draggedColumn, setDraggedColumn] = useState<string | null>(null);
     const [dragOverColumn, setDragOverColumn] = useState<string | null>(null);
+    const [columnSearchQuery, setColumnSearchQuery] = useState('');
+    const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+
+    // Save configuration to localStorage
+    const saveConfiguration = () => {
+        if (!tableId) {
+            setSaveStatus('error');
+            setTimeout(() => setSaveStatus('idle'), 2000);
+            return;
+        }
+
+        setSaveStatus('saving');
+        try {
+            const config = {
+                visibleColumns: Array.from(visibleColumns),
+                columnOrder: columnOrder,
+                savedAt: new Date().toISOString(),
+            };
+            localStorage.setItem(`table_config_${tableId}`, JSON.stringify(config));
+            setSaveStatus('saved');
+            setTimeout(() => setSaveStatus('idle'), 2000);
+        } catch (err) {
+            console.error('Failed to save table configuration:', err);
+            setSaveStatus('error');
+            setTimeout(() => setSaveStatus('idle'), 2000);
+        }
+    };
 
     const visibleColumnsList = useMemo(() => {
         const visible = columns.filter((col) => visibleColumns.has(col.key));
@@ -160,6 +231,22 @@ export function DataTable<T extends Record<string, any> = Record<string, unknown
                             ↑↓ Sort {sorting.sortOrder === 'asc' ? '↑' : '↓'} 1
                         </button>
                     )}
+                    {tableId && (
+                        <button
+                            className={styles.saveConfigButton}
+                            onClick={saveConfiguration}
+                            disabled={saveStatus === 'saving'}
+                            title="Save current column configuration"
+                        >
+                            {saveStatus === 'saving'
+                                ? 'Saving...'
+                                : saveStatus === 'saved'
+                                    ? '✓ Saved'
+                                    : saveStatus === 'error'
+                                        ? '✗ Error'
+                                        : 'Save Configuration'}
+                        </button>
+                    )}
                     <div className={styles.viewMenuContainer}>
                         <button
                             className={styles.viewButton}
@@ -176,23 +263,34 @@ export function DataTable<T extends Record<string, any> = Record<string, unknown
                                 <div className={styles.viewMenu}>
                                     <input
                                         type="text"
-                                        placeholder="Q Search columns..."
+                                        placeholder="Search columns..."
                                         className={styles.columnSearch}
+                                        value={columnSearchQuery}
+                                        onChange={(e) => setColumnSearchQuery(e.target.value)}
                                     />
                                     <div className={styles.columnList}>
-                                        {columns.map((column) => (
-                                            <label
-                                                key={column.key}
-                                                className={styles.columnItem}
-                                            >
-                                                <input
-                                                    type="checkbox"
-                                                    checked={visibleColumns.has(column.key)}
-                                                    onChange={() => toggleColumn(column.key)}
-                                                />
-                                                <span>{column.label}</span>
-                                            </label>
-                                        ))}
+                                        {columns
+                                            .filter((column) => {
+                                                if (!columnSearchQuery.trim()) return true;
+                                                const query = columnSearchQuery.toLowerCase();
+                                                return (
+                                                    column.label.toLowerCase().includes(query) ||
+                                                    column.key.toLowerCase().includes(query)
+                                                );
+                                            })
+                                            .map((column) => (
+                                                <label
+                                                    key={column.key}
+                                                    className={styles.columnItem}
+                                                >
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={visibleColumns.has(column.key)}
+                                                        onChange={() => toggleColumn(column.key)}
+                                                    />
+                                                    <span>{column.label}</span>
+                                                </label>
+                                            ))}
                                     </div>
                                 </div>
                             </>
@@ -252,14 +350,23 @@ export function DataTable<T extends Record<string, any> = Record<string, unknown
                     </thead>
                     <tbody>
                         {loading ? (
-                            <tr>
-                                <td
-                                    colSpan={visibleColumnsList.length}
-                                    className={styles.loadingCell}
-                                >
-                                    <div className={styles.loadingSpinner}>Loading...</div>
-                                </td>
-                            </tr>
+                            <>
+                                {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((i) => (
+                                    <tr key={i} className={styles.skeletonRow}>
+                                        {visibleColumnsList.map((column) => (
+                                            <td key={column.key} className={styles.skeletonCell}>
+                                                <Skeleton
+                                                    className={styles.skeletonText}
+                                                    style={{
+                                                        width: i % 3 === 0 ? '80%' : i % 2 === 0 ? '90%' : '100%',
+                                                        height: '20px',
+                                                    }}
+                                                />
+                                            </td>
+                                        ))}
+                                    </tr>
+                                ))}
+                            </>
                         ) : data.length === 0 ? (
                             <tr>
                                 <td

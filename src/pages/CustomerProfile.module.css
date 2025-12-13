@@ -103,6 +103,15 @@
     align-items: center;
     gap: 8px;
     justify-content: center;
+    cursor: pointer;
+    transition: color 0.15s ease;
+    padding: 4px 8px;
+    border-radius: 4px;
+}
+
+.customerId:hover {
+    color: #1565d8;
+    background-color: #f3f4f6;
 }
 
 .contactInfo {
@@ -119,6 +128,15 @@
     color: #374151;
     word-break: break-word;
     line-height: 1.4;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    padding: 8px;
+    border-radius: 4px;
+}
+
+.contactItem:hover {
+    color: #1565d8;
+    background-color: #f3f4f6;
 }
 
 .contactIcon {

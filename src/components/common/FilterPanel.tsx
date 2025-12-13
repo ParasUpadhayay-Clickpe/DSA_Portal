@@ -9,9 +9,10 @@ export interface FilterOption {
 export interface FilterConfig {
     key: string;
     label: string;
-    type: 'select' | 'date' | 'dateRange' | 'text';
+    type: 'select' | 'date' | 'dateRange' | 'dateRangeField' | 'text';
     options?: FilterOption[];
     placeholder?: string;
+    dateRangeFields?: FilterOption[]; // For dateRangeField type - options for which field to filter
 }
 
 export interface FilterPanelProps {
@@ -22,15 +23,17 @@ export interface FilterPanelProps {
 }
 
 export function FilterPanel({ filters, values, onChange, onReset }: FilterPanelProps) {
-    const [isOpen, setIsOpen] = useState(false);
+    const [isOpen, setIsOpen] = useState(true);
 
     const handleFilterChange = (key: string, value: unknown) => {
         onChange(key, value);
     };
 
-    const activeFiltersCount = Object.values(values).filter(
-        (v) => v !== null && v !== undefined && v !== '' && (Array.isArray(v) ? v.length > 0 : true)
-    ).length;
+    const activeFiltersCount = Object.entries(values).filter(([key, v]) => {
+        // Don't count field selectors as separate filters
+        if (key.endsWith('_field')) return false;
+        return v !== null && v !== undefined && v !== '' && (Array.isArray(v) ? v.length > 0 && v.some(item => item !== null) : true);
+    }).length;
 
     return (
         <div className={styles.filterPanel}>
@@ -43,9 +46,6 @@ export function FilterPanel({ filters, values, onChange, onReset }: FilterPanelP
                     {activeFiltersCount > 0 && (
                         <span className={styles.badge}>{activeFiltersCount}</span>
                     )}
-                </button>
-                <button className={styles.commandButton}>
-                    <span>Command filters</span>
                 </button>
                 {activeFiltersCount > 0 && (
                     <button className={styles.resetButton} onClick={onReset}>
@@ -144,6 +144,69 @@ export function FilterPanel({ filters, values, onChange, onReset }: FilterPanelP
                                                 ]);
                                             }}
                                         />
+                                    </div>
+                                )}
+                                {filter.type === 'dateRangeField' && (
+                                    <div className={styles.dateRangeField}>
+                                        <select
+                                            className={styles.filterInput}
+                                            value={(values[`${filter.key}_field`] as string) || ''}
+                                            onChange={(e) => {
+                                                handleFilterChange(`${filter.key}_field`, e.target.value || null);
+                                                // Reset date range when field changes
+                                                if (!e.target.value) {
+                                                    handleFilterChange(filter.key, null);
+                                                }
+                                            }}
+                                        >
+                                            <option value="">Select field...</option>
+                                            {filter.dateRangeFields?.map((option) => (
+                                                <option key={option.value} value={option.value}>
+                                                    {option.label}
+                                                </option>
+                                            ))}
+                                        </select>
+                                        {(values[`${filter.key}_field`] as string) && (
+                                            <div className={styles.dateRange}>
+                                                <input
+                                                    type="date"
+                                                    className={styles.filterInput}
+                                                    value={
+                                                        Array.isArray(values[filter.key])
+                                                            ? (values[filter.key] as string[])[0] || ''
+                                                            : ''
+                                                    }
+                                                    onChange={(e) => {
+                                                        const current = Array.isArray(values[filter.key])
+                                                            ? (values[filter.key] as string[])
+                                                            : [null, null];
+                                                        handleFilterChange(filter.key, [
+                                                            e.target.value || null,
+                                                            current[1],
+                                                        ]);
+                                                    }}
+                                                />
+                                                <span>to</span>
+                                                <input
+                                                    type="date"
+                                                    className={styles.filterInput}
+                                                    value={
+                                                        Array.isArray(values[filter.key])
+                                                            ? (values[filter.key] as string[])[1] || ''
+                                                            : ''
+                                                    }
+                                                    onChange={(e) => {
+                                                        const current = Array.isArray(values[filter.key])
+                                                            ? (values[filter.key] as string[])
+                                                            : [null, null];
+                                                        handleFilterChange(filter.key, [
+                                                            current[0],
+                                                            e.target.value || null,
+                                                        ]);
+                                                    }}
+                                                />
+                                            </div>
+                                        )}
                                     </div>
                                 )}
                             </div>

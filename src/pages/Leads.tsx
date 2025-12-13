@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { MainLayout } from '@/layouts/MainLayout';
 import { DataTable, FilterPanel } from '@/components/common';
@@ -28,11 +28,18 @@ const SEARCH_TYPE_OPTIONS = [
 
 export const Leads: React.FC = () => {
     const navigate = useNavigate();
+    const [searchParams] = useSearchParams();
     const { isAuthenticated } = useAuth();
     const [leads, setLeads] = useState<UserLead[]>([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [showCreateLeadMenu, setShowCreateLeadMenu] = useState(false);
+
+    // Get agent context from URL parameters (when viewing sub-agent's leads)
+    const agentIdOverride = searchParams.get('agentId') || null;
+    const agentName = searchParams.get('agentName') || null;
+    const agentMobNum = searchParams.get('agentMobNum') || null;
+    const agentEmail = searchParams.get('agentEmail') || null;
 
     // Pagination
     const [page, setPage] = useState(1);
@@ -46,8 +53,8 @@ export const Leads: React.FC = () => {
     // Filters
     const [filters, setFilters] = useState<Record<string, unknown>>({
         loan_status: null,
-        created_at: [null, null],
-        updated_at: [null, null],
+        date_range_field: null, // Field selector: 'created_at' or 'updated_at'
+        date_range: null, // Date range: [start, end]
         search_text: '',
         search_type: null,
     });
@@ -69,14 +76,15 @@ export const Leads: React.FC = () => {
         setError('');
 
         try {
-            // Ensure date ranges are proper tuples
-            const createdAtRange: [string | null, string | null] = Array.isArray(filters.created_at) && filters.created_at.length === 2
-                ? [filters.created_at[0] as string | null, filters.created_at[1] as string | null]
+            // Get selected date range field and values
+            const dateRangeField = (filters.date_range_field as string) || null;
+            const dateRange: [string | null, string | null] = Array.isArray(filters.date_range) && filters.date_range.length === 2
+                ? [filters.date_range[0] as string | null, filters.date_range[1] as string | null]
                 : [null, null];
 
-            const updatedAtRange: [string | null, string | null] = Array.isArray(filters.updated_at) && filters.updated_at.length === 2
-                ? [filters.updated_at[0] as string | null, filters.updated_at[1] as string | null]
-                : [null, null];
+            // Set the appropriate range based on selected field
+            const createdAtRange: [string | null, string | null] = dateRangeField === 'created_at' ? dateRange : [null, null];
+            const updatedAtRange: [string | null, string | null] = dateRangeField === 'updated_at' ? dateRange : [null, null];
 
             const sortByValue: { [key: string]: 1 | -1 } | undefined = sortBy
                 ? {
@@ -129,7 +137,7 @@ export const Leads: React.FC = () => {
         if (isAuthenticated) {
             fetchLeads();
         }
-    }, [isAuthenticated, fetchLeads]);
+    }, [isAuthenticated, fetchLeads, agentIdOverride]);
 
     const handleSort = (key: string, order: 'asc' | 'desc') => {
         setSortBy(key);
@@ -148,8 +156,8 @@ export const Leads: React.FC = () => {
     const handleResetFilters = () => {
         setFilters({
             loan_status: null,
-            created_at: [null, null],
-            updated_at: [null, null],
+            date_range_field: null,
+            date_range: null,
             search_text: '',
             search_type: null,
         });
@@ -162,7 +170,7 @@ export const Leads: React.FC = () => {
         }
 
         // Convert columns to export format, handling React node renders
-        const exportColumns: ExportColumn<UserLead>[] = columns.map((col) => {
+        const exportColumns: ExportColumn<UserLead>[] = allColumns.map((col) => {
             if (!col.render) {
                 return {
                     key: col.key,
@@ -211,8 +219,9 @@ export const Leads: React.FC = () => {
     };
 
     const handleCreateLead = (type: 'allLenders' | 'muthootEDI') => {
-        const agentId = localStorage.getItem('agent_id') || localStorage.getItem('agentId') || '';
-        const agentMobNum = localStorage.getItem('agentMobNum') || '';
+        // Use agent context from URL if available (sub-agent), otherwise use logged-in agent
+        const agentId = agentIdOverride || localStorage.getItem('agent_id') || localStorage.getItem('agentId') || '';
+        const mobNum = agentMobNum || localStorage.getItem('agentMobNum') || '';
 
         if (!agentId) {
             alert('Agent ID not found');
@@ -221,9 +230,9 @@ export const Leads: React.FC = () => {
 
         let url = '';
         if (type === 'allLenders') {
-            url = `https://login.clickpe.ai/login?agentId=${agentId}&m=${agentMobNum}`;
+            url = `https://login.clickpe.ai/login?agentId=${agentId}&m=${mobNum}`;
         } else {
-            url = `https://muthoot.clickpe.ai/?agentId=${agentId}&m=${agentMobNum}`;
+            url = `https://muthoot.clickpe.ai/?agentId=${agentId}&m=${mobNum}`;
         }
 
         window.open(url, '_blank');
@@ -232,20 +241,10 @@ export const Leads: React.FC = () => {
 
     const filterConfigs: FilterConfig[] = [
         {
-            key: 'loan_status',
-            label: 'Loan Status',
+            key: 'search_type',
+            label: 'Search Type',
             type: 'select',
-            options: LOAN_STATUS_OPTIONS,
-        },
-        {
-            key: 'created_at',
-            label: 'Created At',
-            type: 'dateRange',
-        },
-        {
-            key: 'updated_at',
-            label: 'Updated At',
-            type: 'dateRange',
+            options: SEARCH_TYPE_OPTIONS,
         },
         {
             key: 'search_text',
@@ -254,10 +253,19 @@ export const Leads: React.FC = () => {
             placeholder: 'Enter search text...',
         },
         {
-            key: 'search_type',
-            label: 'Search Type',
+            key: 'loan_status',
+            label: 'Loan Status',
             type: 'select',
-            options: SEARCH_TYPE_OPTIONS,
+            options: LOAN_STATUS_OPTIONS,
+        },
+        {
+            key: 'date_range',
+            label: 'Date Range',
+            type: 'dateRangeField',
+            dateRangeFields: [
+                { label: 'Created At', value: 'created_at' },
+                { label: 'Updated At', value: 'updated_at' },
+            ],
         },
     ];
 
@@ -367,6 +375,76 @@ export const Leads: React.FC = () => {
         },
     ];
 
+    // Dynamically generate columns for all other UserLead fields not already defined
+    const dynamicColumns = useMemo(() => {
+        if (leads.length === 0) return [];
+
+        // Get all keys from the first lead
+        const allKeys = Object.keys(leads[0] || {}) as (keyof UserLead)[];
+
+        // Get keys that are already defined in the static columns
+        const definedKeys = new Set(columns.map(col => col.key));
+
+        // Filter out keys that are already defined
+        const remainingKeys = allKeys.filter(key => !definedKeys.has(String(key)));
+
+        // Generate column definitions for remaining keys
+        return remainingKeys.map(key => {
+            const label = String(key)
+                .replace(/_/g, ' ')
+                .replace(/\b\w/g, l => l.toUpperCase());
+
+            // Determine render function based on key patterns
+            let render: ((value: unknown, row: UserLead) => React.ReactNode) | undefined;
+
+            // Amount fields
+            if (key.toString().includes('_amt') || key.toString().includes('amount') || key === 'income') {
+                render = (value) => {
+                    if (!value) return '-';
+                    return `₹${Number(value).toLocaleString()}`;
+                };
+            }
+            // Date fields
+            else if (key.toString().includes('_date') || key.toString().includes('created_at') || key.toString().includes('updated_at') || key === 'dob') {
+                render = (value) => {
+                    if (!value) return '-';
+                    try {
+                        return new Date(value as string).toLocaleDateString();
+                    } catch {
+                        return String(value);
+                    }
+                };
+            }
+            // Boolean fields
+            else if (key === 'is_politically_exposed') {
+                render = (value) => {
+                    if (value === null || value === undefined) return '-';
+                    return value ? 'Yes' : 'No';
+                };
+            }
+            // Default: just display the value
+            else {
+                render = (value) => {
+                    if (value === null || value === undefined) return '-';
+                    return String(value);
+                };
+            }
+
+            return {
+                key: String(key),
+                label,
+                sortable: true,
+                defaultVisible: false,
+                render,
+            } as Column<UserLead>;
+        });
+    }, [leads]);
+
+    // Combine static and dynamic columns
+    const allColumns = useMemo(() => {
+        return [...columns, ...dynamicColumns];
+    }, [columns, dynamicColumns]);
+
     if (!isAuthenticated) {
         return null;
     }
@@ -375,7 +453,19 @@ export const Leads: React.FC = () => {
         <MainLayout>
             <div className={styles.pageContainer}>
                 <div className={styles.pageHeader}>
-                    <h1 className={styles.pageTitle}>Leads</h1>
+                    <div>
+                        <h1 className={styles.pageTitle}>
+                            Leads
+                            {agentName && (
+                                <span className={styles.agentContext}> - {agentName}</span>
+                            )}
+                        </h1>
+                        {agentName && (
+                            <p className={styles.agentContextInfo}>
+                                Viewing leads for: {agentName} (ID: {agentIdOverride})
+                            </p>
+                        )}
+                    </div>
                     <div className={styles.headerActions}>
                         <div className={styles.createLeadContainer}>
                             <button
@@ -428,20 +518,11 @@ export const Leads: React.FC = () => {
                     onReset={handleResetFilters}
                 />
 
-                <div className={styles.searchBar}>
-                    <input
-                        type="text"
-                        placeholder="Search titles..."
-                        className={styles.searchInput}
-                        value={(filters.search_text as string) || ''}
-                        onChange={(e) => handleFilterChange('search_text', e.target.value)}
-                    />
-                </div>
-
                 <DataTable
                     data={leads}
-                    columns={columns}
+                    columns={allColumns}
                     loading={loading}
+                    tableId="leads"
                     pagination={{
                         page,
                         pageSize,
@@ -457,7 +538,16 @@ export const Leads: React.FC = () => {
                         sortOrder,
                         onSort: handleSort,
                     }}
-                    onRowClick={(row) => navigate(`/customer/${row.user_id}`, { state: { lead: row } })}
+                    onRowClick={(row) => {
+                        // Preserve agent context when navigating to customer profile
+                        const params = new URLSearchParams();
+                        if (agentIdOverride) params.set('agentId', agentIdOverride);
+                        if (agentName) params.set('agentName', agentName);
+                        if (agentMobNum) params.set('agentMobNum', agentMobNum);
+                        if (agentEmail) params.set('agentEmail', agentEmail);
+                        const queryString = params.toString();
+                        navigate(`/customer/${row.user_id}${queryString ? `?${queryString}` : ''}`, { state: { lead: row } });
+                    }}
                     emptyMessage="No leads found"
                 />
             </div>
