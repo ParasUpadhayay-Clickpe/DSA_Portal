@@ -1,0 +1,152 @@
+.pageContainer {
+    padding: 24px;
+    min-height: calc(100vh - 64px);
+    background: #f9fafb;
+}
+
+.pageHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+}
+
+.headerActions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.createLeadContainer {
+    position: relative;
+}
+
+.createLeadButton {
+    padding: 10px 20px;
+    background: #1565d8;
+    color: #ffffff;
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.createLeadButton:hover {
+    background: #1252b3;
+}
+
+.menuOverlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 998;
+}
+
+.createLeadMenu {
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    min-width: 180px;
+    z-index: 999;
+    overflow: hidden;
+}
+
+.menuItem {
+    display: block;
+    width: 100%;
+    padding: 12px 16px;
+    background: transparent;
+    border: none;
+    text-align: left;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    font-size: 14px;
+    color: #374151;
+    border-bottom: 1px solid #f3f4f6;
+}
+
+.menuItem:last-child {
+    border-bottom: none;
+}
+
+.menuItem:hover {
+    background: #f9fafb;
+    color: #1565d8;
+}
+
+.exportButton {
+    padding: 10px 20px;
+    background: #10b981;
+    color: #ffffff;
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.exportButton:hover:not(:disabled) {
+    background: #059669;
+}
+
+.exportButton:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.pageTitle {
+    font-size: 24px;
+    font-weight: 600;
+    color: #111827;
+    margin: 0;
+}
+
+.errorMessage {
+    padding: 12px 16px;
+    background: #fee2e2;
+    border: 1px solid #fecaca;
+    border-radius: 6px;
+    color: #991b1b;
+    margin-bottom: 24px;
+    font-size: 14px;
+}
+
+.searchBar {
+    margin-bottom: 24px;
+}
+
+.searchInput {
+    width: 100%;
+    max-width: 400px;
+    padding: 10px 16px;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    font-size: 14px;
+    color: #111827;
+    transition: all 0.15s ease;
+}
+
+.searchInput:focus {
+    outline: none;
+    border-color: #1565d8;
+    box-shadow: 0 0 0 3px rgba(21, 101, 216, 0.1);
+}
+
+.searchInput::placeholder {
+    color: #9ca3af;
+}

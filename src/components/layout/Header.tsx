@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
+import { useRole } from '@/contexts/RoleContext';
 import { ChevronDownIcon, LogOutIcon, SettingsIcon, MenuIcon } from '@/components/icons';
 import styles from './Header.module.css';
 
@@ -11,8 +12,10 @@ interface HeaderProps {
 
 export const Header: React.FC<HeaderProps> = ({ sidebarCollapsed, onMobileMenuClick }) => {
     const { currentUser, logout } = useAuth();
+    const { selectedRole, availableRoles, setSelectedRole } = useRole();
     const navigate = useNavigate();
     const [showUserMenu, setShowUserMenu] = useState(false);
+    const [showRoleMenu, setShowRoleMenu] = useState(false);
 
     const handleLogout = () => {
         logout();
@@ -57,6 +60,60 @@ export const Header: React.FC<HeaderProps> = ({ sidebarCollapsed, onMobileMenuCl
                 </div>
 
                 <div className={styles.rightSection}>
+                    {/* Role Switcher */}
+                    {availableRoles.length > 0 && (
+                        <div className={styles.roleMenuContainer}>
+                            <button
+                                className={styles.roleButton}
+                                onClick={() => setShowRoleMenu(!showRoleMenu)}
+                                aria-label="Switch role"
+                            >
+                                <span className={styles.roleLabel}>
+                                    {selectedRole ? selectedRole.role_type.replace('_', ' ') : 'Agent'}
+                                </span>
+                                <ChevronDownIcon size={14} className={styles.dropdownIcon} />
+                            </button>
+
+                            {showRoleMenu && (
+                                <>
+                                    <div
+                                        className={styles.overlay}
+                                        onClick={() => setShowRoleMenu(false)}
+                                    />
+                                    <div className={styles.roleDropdown}>
+                                        <div className={styles.roleDropdownHeader}>Switch Role</div>
+                                        <div className={styles.dropdownDivider} />
+                                        <button
+                                            className={`${styles.roleDropdownItem} ${!selectedRole ? styles.activeRole : ''}`}
+                                            onClick={() => {
+                                                setSelectedRole(null);
+                                                setShowRoleMenu(false);
+                                            }}
+                                        >
+                                            <span>Agent</span>
+                                            {!selectedRole && <span className={styles.checkmark}>✓</span>}
+                                        </button>
+                                        {availableRoles.map((role) => (
+                                            <button
+                                                key={role.role_id}
+                                                className={`${styles.roleDropdownItem} ${selectedRole?.role_id === role.role_id ? styles.activeRole : ''}`}
+                                                onClick={() => {
+                                                    setSelectedRole(role);
+                                                    setShowRoleMenu(false);
+                                                }}
+                                            >
+                                                <span>{role.role_type.replace('_', ' ')}</span>
+                                                {selectedRole?.role_id === role.role_id && (
+                                                    <span className={styles.checkmark}>✓</span>
+                                                )}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </>
+                            )}
+                        </div>
+                    )}
+
                     {/* User Menu */}
                     <div className={styles.userMenuContainer}>
                         <button
@@ -70,7 +127,9 @@ export const Header: React.FC<HeaderProps> = ({ sidebarCollapsed, onMobileMenuCl
                             {!sidebarCollapsed && (
                                 <div className={styles.userInfo}>
                                     <span className={styles.userName}>{getUserDisplayName()}</span>
-                                    <span className={styles.userRole}>Agent</span>
+                                    <span className={styles.userRole}>
+                                        {selectedRole ? selectedRole.role_type.replace('_', ' ') : 'Agent'}
+                                    </span>
                                 </div>
                             )}
                             <ChevronDownIcon size={14} className={styles.dropdownIcon} />

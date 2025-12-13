@@ -9,7 +9,9 @@ import {
     NetworkIcon,
     UserIcon,
     LogOutIcon,
+    UserPlusIcon,
 } from '@/components/icons';
+import { getExternalURL } from '@/config';
 import styles from './Sidebar.module.css';
 
 interface SidebarProps {
@@ -48,6 +50,19 @@ export const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, onToggle, isMobil
     const handleLogout = () => {
         logout();
         navigate('/agent-login');
+        if (onMobileClose) {
+            onMobileClose();
+        }
+    };
+
+    const handleAddSubAgent = () => {
+        const agentId = localStorage.getItem('agent_id') || localStorage.getItem('agentId') || '';
+        if (agentId) {
+            const baseUrl = getExternalURL('AGENT_ONBOARDING');
+            window.open(`${baseUrl}/?referredby=${agentId}`, '_blank');
+        } else {
+            alert('Agent ID not found');
+        }
         if (onMobileClose) {
             onMobileClose();
         }
@@ -95,6 +110,20 @@ export const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, onToggle, isMobil
                                 </li>
                             );
                         })}
+                        <li>
+                            <button
+                                className={styles.menuItem}
+                                onClick={handleAddSubAgent}
+                                title={isCollapsed ? 'Add New Sub-Agent' : undefined}
+                            >
+                                <span className={styles.menuIcon}>
+                                    <UserPlusIcon />
+                                </span>
+                                {!isCollapsed && (
+                                    <span className={styles.menuLabel}>Add New Sub-Agent</span>
+                                )}
+                            </button>
+                        </li>
                     </ul>
                 </nav>
 

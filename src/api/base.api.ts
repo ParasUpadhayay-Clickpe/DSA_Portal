@@ -4,7 +4,8 @@
  * Open/Closed: Can be extended without modification
  */
 
-import axios, { AxiosInstance, AxiosError } from 'axios';
+import axios, { AxiosInstance, AxiosError, InternalAxiosRequestConfig } from 'axios';
+import { getAuthorizationHeader } from '@/utils/auth';
 
 export interface ApiResponse<T = unknown> {
     success: boolean;
@@ -32,6 +33,24 @@ export abstract class BaseApi {
             },
             timeout: 30000, // 30 seconds
         });
+
+        // Add request interceptor to include authorization header
+        this.axiosInstance.interceptors.request.use(
+            async (config: InternalAxiosRequestConfig) => {
+                try {
+                    const token = await getAuthorizationHeader(true);
+                    if (token && config.headers) {
+                        config.headers.Authorization = token;
+                    }
+                } catch (error) {
+                    console.error('Failed to get authorization header:', error);
+                }
+                return config;
+            },
+            (error) => {
+                return Promise.reject(error);
+            }
+        );
     }
 
     /**
@@ -55,12 +74,13 @@ export abstract class BaseApi {
      */
     protected async post<T>(
         endpoint: string,
-        data: unknown
+        data: unknown,
+        useJsonContentType: boolean = true
     ): Promise<ApiResponse<T>> {
         try {
             const response = await this.axiosInstance.post<T>(endpoint, data, {
                 headers: {
-                    'Content-Type': 'text/plain',
+                    'Content-Type': useJsonContentType ? 'application/json' : 'text/plain',
                 },
             });
             return {

@@ -42,6 +42,7 @@ export const decryptAuthKey = (
     localStorage.setItem(`headerSecretKey${prefix}`, keys.header_secret_key);
     localStorage.setItem(`bodySecretKey${prefix}`, keys.body_secret_key);
 
+
     return [keys.access_token, keys.refresh_token];
 };
 

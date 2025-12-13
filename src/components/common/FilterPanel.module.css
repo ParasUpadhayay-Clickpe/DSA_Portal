@@ -1,0 +1,124 @@
+.filterPanel {
+    margin-bottom: 24px;
+}
+
+.filterHeader {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.filterButton,
+.commandButton {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    color: #374151;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.filterButton:hover,
+.commandButton:hover {
+    background: #f3f4f6;
+    border-color: #d1d5db;
+    color: #1565d8;
+}
+
+.badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 20px;
+    height: 20px;
+    padding: 0 6px;
+    background: #1565d8;
+    color: #ffffff;
+    border-radius: 10px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.resetButton {
+    padding: 8px 16px;
+    background: #ef4444;
+    border: 1px solid #ef4444;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    color: #ffffff;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.resetButton:hover {
+    background: #dc2626;
+    border-color: #dc2626;
+}
+
+.filterContent {
+    margin-top: 16px;
+    padding: 20px;
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+}
+
+.filterGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 16px;
+}
+
+.filterItem {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.filterLabel {
+    font-size: 14px;
+    font-weight: 500;
+    color: #374151;
+}
+
+.filterInput {
+    padding: 8px 12px;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    font-size: 14px;
+    color: #111827;
+    transition: all 0.15s ease;
+}
+
+.filterInput:focus {
+    outline: none;
+    border-color: #1565d8;
+    box-shadow: 0 0 0 3px rgba(21, 101, 216, 0.1);
+}
+
+.dateRange {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.dateRange span {
+    font-size: 14px;
+    color: #6b7280;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .filterGrid {
+        grid-template-columns: 1fr;
+    }
+}
+

@@ -4,6 +4,7 @@
  */
 
 import { authApi } from '@/api';
+import { clearAllCookies } from '@/utils/cookies';
 import type {
     LoginCredentials,
     ForgotPasswordRequest,
@@ -85,7 +86,7 @@ export class AuthService {
 
     /**
      * Logout user
-     * Clears all authentication-related localStorage keys (matching auth_api.md)
+     * Clears all authentication-related localStorage keys and cookies (matching auth_api.md)
      */
     logout(): void {
         // Clear encrypted tokens
@@ -112,6 +113,9 @@ export class AuthService {
         localStorage.removeItem('otp_unique_id');
         localStorage.removeItem('otp_reference_id');
         localStorage.removeItem('otp_mobile');
+
+        // Clear all cookies
+        clearAllCookies();
     }
 
     /**

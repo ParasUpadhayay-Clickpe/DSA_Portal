@@ -53,7 +53,6 @@ export class AuthApi extends BaseApi {
                     // Decrypt the auth key and store tokens
                     let accessToken = '';
                     let refreshToken = '';
-
                     if (APP_CONFIG.DECRYPTION_KEY && loginData.key) {
                         try {
                             [accessToken, refreshToken] = decryptAuthKey(
@@ -63,9 +62,20 @@ export class AuthApi extends BaseApi {
                             );
                         } catch (error) {
                             console.error('Failed to decrypt auth key:', error);
+                            console.error(
+                                'DECRYPTION_KEY is set but decryption failed. ' +
+                                'Please verify that REACT_APP_ENCRYPTION_DEV or REACT_APP_ENCRYPTION_PROD is correct.'
+                            );
+                            // Store encrypted key as fallback, but this should not be used for API calls
                             localStorage.setItem('auth_token', loginData.key);
                         }
                     } else {
+                        console.warn(
+                            'DECRYPTION_KEY is not set. ' +
+                            'Please set REACT_APP_ENCRYPTION_DEV or REACT_APP_ENCRYPTION_PROD environment variable. ' +
+                            'Storing encrypted key as fallback (not recommended for production).'
+                        );
+                        // Store encrypted key as fallback, but this should not be used for API calls
                         localStorage.setItem('auth_token', loginData.key);
                     }
 

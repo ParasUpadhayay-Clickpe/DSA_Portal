@@ -2,6 +2,7 @@
     width: 100%;
     max-width: 1400px;
     margin: 0 auto;
+    padding: 24px;
 }
 
 .dashboardCard {
@@ -35,6 +36,10 @@
 
 /* Responsive */
 @media (max-width: 768px) {
+    .dashboardContainer {
+        padding: 16px;
+    }
+
     .dashboardCard {
         padding: 32px 24px;
     }

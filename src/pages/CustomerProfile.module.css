@@ -1,0 +1,375 @@
+.container {
+    width: 100%;
+    max-width: 1600px;
+    margin: 0 auto;
+    padding: 24px;
+}
+
+.backButton {
+    padding: 10px 20px;
+    background: #ffffff;
+    color: #374151;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 20px;
+}
+
+.backButton:hover {
+    background: #f9fafb;
+    border-color: #d1d5db;
+    color: #1565d8;
+}
+
+.mainLayout {
+    display: grid;
+    grid-template-columns: 300px 0.9fr;
+    gap: 10px;
+    align-items: start;
+}
+
+.leftPanel {
+    position: sticky;
+    top: 24px;
+    max-width: 300px;
+}
+
+.customerCard {
+    background: #ffffff;
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+    border: 1px solid #e5e7eb;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.profileSection {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    margin-bottom: 20px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.avatar {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #1565d8 0%, #1e88e5 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    font-weight: 600;
+    color: #ffffff;
+    margin-bottom: 12px;
+    flex-shrink: 0;
+}
+
+.statusBadge {
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 600;
+    color: #ffffff;
+    margin-bottom: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.customerName {
+    font-size: 16px;
+    font-weight: 600;
+    color: #111827;
+    margin: 0 0 8px 0;
+    text-transform: capitalize;
+    word-break: break-word;
+    line-height: 1.4;
+}
+
+.customerId {
+    font-size: 12px;
+    color: #6b7280;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    justify-content: center;
+}
+
+.contactInfo {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.contactItem {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    font-size: 13px;
+    color: #374151;
+    word-break: break-word;
+    line-height: 1.4;
+}
+
+.contactIcon {
+    font-size: 16px;
+    width: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    margin-top: 2px;
+}
+
+.copyButton {
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    padding: 4px;
+    font-size: 14px;
+    color: #6b7280;
+    transition: color 0.15s ease;
+    flex-shrink: 0;
+}
+
+.copyButton:hover {
+    color: #1565d8;
+}
+
+.rightPanel {
+    background: #ffffff;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+    border: 1px solid #e5e7eb;
+    overflow: hidden;
+}
+
+.tabs {
+    display: flex;
+    gap: 0;
+    border-bottom: 1px solid #e5e7eb;
+    background: #f9fafb;
+}
+
+.tab {
+    padding: 14px 24px;
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid transparent;
+    font-size: 14px;
+    font-weight: 500;
+    color: #6b7280;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    margin-bottom: -2px;
+    position: relative;
+}
+
+.tab:hover {
+    color: #1565d8;
+    background: #f3f4f6;
+}
+
+.activeTab {
+    color: #1565d8;
+    border-bottom-color: #1565d8;
+    background: #ffffff;
+}
+
+.content {
+    padding: 24px;
+}
+
+.details {
+    display: flex;
+    flex-direction: column;
+    gap: 32px;
+}
+
+.section {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.sectionTitle {
+    font-size: 16px;
+    font-weight: 600;
+    color: #111827;
+    margin: 0 0 16px 0;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.detailsGrid {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.detailRow {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 0;
+    border-bottom: 1px solid #f3f4f6;
+}
+
+.detailRow:last-child {
+    border-bottom: none;
+}
+
+.detailLabel {
+    font-size: 14px;
+    font-weight: 500;
+    color: #6b7280;
+    flex: 0 0 200px;
+}
+
+.detailValue {
+    font-size: 14px;
+    color: #111827;
+    text-align: right;
+    flex: 1;
+}
+
+.timeline {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+.timelineList {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    position: relative;
+    padding-left: 24px;
+}
+
+.timelineList::before {
+    content: '';
+    position: absolute;
+    left: 7px;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: #e5e7eb;
+}
+
+.timelineEvent {
+    display: flex;
+    gap: 16px;
+    position: relative;
+}
+
+.timelineDot {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: #1565d8;
+    border: 3px solid #ffffff;
+    box-shadow: 0 0 0 2px #1565d8;
+    flex-shrink: 0;
+    margin-top: 2px;
+    z-index: 1;
+}
+
+.timelineContent {
+    flex: 1;
+    padding: 16px;
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+}
+
+.timelineHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.timelineEventType {
+    font-size: 14px;
+    font-weight: 600;
+    color: #111827;
+    text-transform: capitalize;
+}
+
+.timelineDate {
+    font-size: 12px;
+    color: #6b7280;
+}
+
+.timelineDescription {
+    font-size: 14px;
+    color: #374151;
+    margin-bottom: 8px;
+}
+
+.timelineMeta {
+    display: flex;
+    gap: 16px;
+    font-size: 12px;
+    color: #6b7280;
+}
+
+.loading,
+.error,
+.emptyState {
+    padding: 48px;
+    text-align: center;
+    color: #6b7280;
+    font-size: 14px;
+}
+
+.error {
+    color: #991b1b;
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+    .mainLayout {
+        grid-template-columns: 1fr;
+    }
+
+    .leftPanel {
+        position: static;
+    }
+}
+
+@media (max-width: 768px) {
+    .container {
+        padding: 16px;
+    }
+
+    .tabs {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .detailRow {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 4px;
+    }
+
+    .detailLabel {
+        flex: none;
+    }
+
+    .detailValue {
+        text-align: left;
+    }
+}

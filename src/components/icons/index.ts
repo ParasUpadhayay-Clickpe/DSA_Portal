@@ -11,5 +11,6 @@ export {
     LogOutIcon,
     SettingsIcon,
     MenuIcon,
+    UserPlusIcon,
 } from './Icons';
 
