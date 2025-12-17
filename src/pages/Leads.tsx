@@ -219,8 +219,9 @@ export const Leads: React.FC = () => {
     };
 
     const handleCreateLead = (type: 'allLenders' | 'muthootEDI') => {
-        // Use agent context from URL if available (sub-agent), otherwise use logged-in agent
+        // Use agentIdOverride (subagent ID) if available, otherwise fallback to localStorage
         const agentId = agentIdOverride || localStorage.getItem('agent_id') || localStorage.getItem('agentId') || '';
+        // Get mobile number from URL params (sub-agent) or localStorage
         const mobNum = agentMobNum || localStorage.getItem('agentMobNum') || '';
 
         if (!agentId) {
@@ -228,11 +229,14 @@ export const Leads: React.FC = () => {
             return;
         }
 
+        // Encode mobile number using base64 (for agents, no reversal needed)
+        const encodedMobNum = mobNum ? btoa(String(mobNum).trim()) : '';
+
         let url = '';
         if (type === 'allLenders') {
-            url = `https://login.clickpe.ai/login?agentId=${agentId}&m=${mobNum}`;
+            url = `https://login.clickpe.ai/login?agentId=${agentId}${encodedMobNum ? `&m=${encodedMobNum}` : ''}`;
         } else {
-            url = `https://muthoot.clickpe.ai/?agentId=${agentId}&m=${mobNum}`;
+            url = `https://muthoot.clickpe.ai/?agentId=${agentId}${encodedMobNum ? `&m=${encodedMobNum}` : ''}`;
         }
 
         window.open(url, '_blank');

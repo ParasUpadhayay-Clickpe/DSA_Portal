@@ -3,23 +3,38 @@
  */
 
 export interface GetLoanDetailsRequest {
-    query_type: 'agent_all_loan' | 'loan_by_id';
+    query_type: 'all_loan' | 'all_active_loan' | 'new_get_agent_loans' | 'agent_active_loan' | 'user_all_loan' | 'user_active_loan' | 'user_loan_id' | 'loan_by_id';
     agent_id?: string;
+    user_id?: string;
     loan_id?: string;
     page?: number;
     page_size?: number;
     ranges?: {
         created_at?: [string | null, string | null];
         updated_at?: [string | null, string | null];
+        loan_created_at?: { min?: string | null; max?: string | null };
+        loan_start_date?: { min?: string | null; max?: string | null };
+        loan_end_date?: { min?: string | null; max?: string | null };
+        lender_approved_amt?: { min?: number | null; max?: number | null };
+        disbursed_amt?: { min?: number | null; max?: number | null };
+        requested_amt?: { min?: number | null; max?: number | null };
+        loan_tenure?: { min?: number | null; max?: number | null };
+        loan_installment_amt?: { min?: number | null; max?: number | null };
     };
     sort_by?: {
         [key: string]: -1 | 1;
     };
     filters?: {
         loan_id?: string;
+        loan_status?: string[];
         sub_status?: string[];
+        lender_id?: string;
+        loan_type?: string;
         mob_num?: string;
         'l.user_id'?: string;
+        fname?: string;
+        lname?: string;
+        loan_acc_num?: string;
     };
     text?: string;
     search_columns?: string[];

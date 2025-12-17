@@ -91,6 +91,9 @@ export class AuthApi extends BaseApi {
                         })
                     );
 
+                    // Dispatch custom event to notify RoleContext to reload roles
+                    window.dispatchEvent(new CustomEvent('agentLoggedIn'));
+
                     return {
                         success: true,
                         message: loginData.message || 'Login successful',
@@ -254,6 +257,9 @@ export class AuthApi extends BaseApi {
                             hasEmailCredentials: verifyData.is_email_login_credentials_present,
                         })
                     );
+
+                    // Dispatch custom event to notify RoleContext to reload roles
+                    window.dispatchEvent(new CustomEvent('agentLoggedIn'));
 
                     return {
                         success: true,

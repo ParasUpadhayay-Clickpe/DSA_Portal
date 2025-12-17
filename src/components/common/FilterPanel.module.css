@@ -125,6 +125,136 @@
     margin-top: 4px;
 }
 
+.searchableSelect {
+    position: relative;
+}
+
+.searchableSelectTrigger {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 12px;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    background: #fff;
+    cursor: pointer;
+    font-size: 14px;
+    color: #111827;
+}
+
+.searchableSelectTrigger:hover {
+    border-color: #d1d5db;
+}
+
+.searchableSelectTrigger .placeholder {
+    color: #9ca3af;
+}
+
+.searchableSelectTrigger .arrow {
+    font-size: 10px;
+    color: #6b7280;
+}
+
+.searchableSelectDropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    margin-top: 4px;
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    z-index: 100;
+    max-height: 300px;
+    display: flex;
+    flex-direction: column;
+}
+
+.searchableSelectSearch {
+    padding: 10px 12px;
+    border: none;
+    border-bottom: 1px solid #e5e7eb;
+    font-size: 14px;
+    outline: none;
+}
+
+.searchableSelectSearch:focus {
+    border-bottom-color: #1565d8;
+}
+
+.searchableSelectOptions {
+    overflow-y: auto;
+    max-height: 240px;
+}
+
+.searchableSelectOption {
+    padding: 10px 12px;
+    cursor: pointer;
+    font-size: 14px;
+    color: #374151;
+}
+
+.searchableSelectOption:hover {
+    background: #f3f4f6;
+}
+
+.searchableSelectOption.selected {
+    background: #e0e7ff;
+    color: #3730a3;
+}
+
+.searchableSelectNoResults {
+    padding: 12px;
+    text-align: center;
+    color: #9ca3af;
+    font-size: 14px;
+}
+
+.multiSelect {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.multiSelectTags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.multiSelectTag {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 8px;
+    background: #e0e7ff;
+    color: #3730a3;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.multiSelectTag button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 16px;
+    height: 16px;
+    padding: 0;
+    background: transparent;
+    border: none;
+    color: #6366f1;
+    font-size: 14px;
+    cursor: pointer;
+    border-radius: 50%;
+}
+
+.multiSelectTag button:hover {
+    background: #c7d2fe;
+    color: #4338ca;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
     .filterGrid {

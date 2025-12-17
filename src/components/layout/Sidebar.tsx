@@ -10,6 +10,8 @@ import {
     UserIcon,
     LogOutIcon,
     UserPlusIcon,
+    ChevronLeftIcon,
+    ChevronRightIcon,
 } from '@/components/icons';
 import { getExternalURL } from '@/config';
 import styles from './Sidebar.module.css';
@@ -128,6 +130,18 @@ export const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, onToggle, isMobil
                 </nav>
 
                 <div className={styles.sidebarFooter}>
+                    <button
+                        className={styles.toggleButton}
+                        onClick={onToggle}
+                        title={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+                    >
+                        <span className={styles.menuIcon}>
+                            {isCollapsed ? <ChevronRightIcon /> : <ChevronLeftIcon />}
+                        </span>
+                        {!isCollapsed && (
+                            <span className={styles.menuLabel}>Collapse</span>
+                        )}
+                    </button>
                     <button
                         className={styles.logoutButton}
                         onClick={handleLogout}

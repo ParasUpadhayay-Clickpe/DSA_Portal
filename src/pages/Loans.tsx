@@ -6,7 +6,7 @@ import { useRole } from '@/contexts/RoleContext';
 import { MainLayout } from '@/layouts/MainLayout';
 import { DataTable, FilterPanel } from '@/components/common';
 import type { Column, FilterConfig } from '@/components/common';
-import { loansApi, entityRoleMappingApi } from '@/api';
+import { loansApi, entityRoleMappingApi, subAgentsApi } from '@/api';
 import type { Loan } from '@/types/loans.types';
 import type { AgentEntity } from '@/types/entityRoleMapping.types';
 import { exportToExcel, type ExportColumn } from '@/utils/exportToExcel';
@@ -24,6 +24,19 @@ const SUB_STATUS_OPTIONS = [
     { label: 'LOAN_REJECTED', value: 'LOAN_REJECTED' },
     { label: 'CANCELLED', value: 'CANCELLED' },
     { label: 'SKIP', value: 'SKIP' },
+];
+
+const LOAN_STATUS_OPTIONS = [
+    { label: 'Pending', value: 'Pending' },
+    { label: 'Approved', value: 'Approved' },
+    { label: 'Active', value: 'Active' },
+    { label: 'Closed', value: 'Closed' },
+    { label: 'Rejected', value: 'Rejected' },
+    { label: 'Esign Completed', value: 'Esign Completed' },
+];
+
+const LENDER_OPTIONS = [
+    { label: 'SPCBL', value: 'SPCBL' },
 ];
 
 export const Loans: React.FC = () => {
@@ -50,7 +63,10 @@ export const Loans: React.FC = () => {
 
     // Filters
     const [filters, setFilters] = useState<Record<string, unknown>>({
-        sub_status: null,
+        sub_status: [],
+        loan_status: [],
+        lender_id: null,
+        filter_agent_id: null,
         search_text: '',
         search_type: null, // 'loan_id', 'mob_num', 'user_id', 'name'
         date_range_field: null, // Field selector: 'created_at' or 'updated_at'
@@ -62,11 +78,47 @@ export const Loans: React.FC = () => {
     const [availableAgents, setAvailableAgents] = useState<Array<{ role_id: string; agent_name: string; agent_id: string }>>([]);
     const [loadingAgents, setLoadingAgents] = useState(false);
 
+    // Sub-agents for agent filter dropdown
+    const [subAgentOptions, setSubAgentOptions] = useState<Array<{ label: string; value: string }>>([]);
+
     useEffect(() => {
         if (!isAuthenticated) {
             navigate('/agent-login');
         }
     }, [isAuthenticated, navigate]);
+
+    // Fetch sub-agents for agent filter dropdown
+    useEffect(() => {
+        const fetchSubAgents = async () => {
+            const agentId = localStorage.getItem('agent_id') || localStorage.getItem('agentId');
+            if (!agentId) return;
+
+            try {
+                const response = await subAgentsApi.getSubAgents({ agent_id: agentId });
+                if (response.response && response.response.length > 0) {
+                    // Flatten the tree structure to get all agents
+                    const flattenAgents = (agents: typeof response.response): Array<{ label: string; value: string }> => {
+                        const result: Array<{ label: string; value: string }> = [];
+                        agents.forEach((agent) => {
+                            const name = [agent.fname, agent.mname, agent.lname].filter(Boolean).join(' ');
+                            result.push({ label: name || agent.agent_id, value: agent.agent_id });
+                            if (agent.children && agent.children.length > 0) {
+                                result.push(...flattenAgents(agent.children));
+                            }
+                        });
+                        return result;
+                    };
+                    setSubAgentOptions(flattenAgents(response.response));
+                }
+            } catch (err) {
+                console.error('Failed to fetch sub-agents:', err);
+            }
+        };
+
+        if (isAuthenticated) {
+            fetchSubAgents();
+        }
+    }, [isAuthenticated]);
 
     // Fetch available agents for Document Verifier role
     useEffect(() => {
@@ -146,28 +198,30 @@ export const Loans: React.FC = () => {
                     }
                     : undefined;
 
+                // If assigned_to_agent is selected, use that as role_id instead
+                const effectiveRoleId = filters.assigned_to_agent
+                    ? (filters.assigned_to_agent as string)
+                    : selectedRole.role_id;
+
                 const entityRequest = {
-                    role_id: selectedRole.role_id,
+                    role_id: effectiveRoleId,
                     entity_type: 'loan_id',
                     role_type: selectedRole.role_type,
                     page,
                     page_size: pageSize,
                     sort_by: sortByValue,
                     filters: {
-                        sub_status:
-                            filters.sub_status && Array.isArray(filters.sub_status)
-                                ? (filters.sub_status as string[])
-                                : filters.sub_status
-                                    ? [filters.sub_status as string]
-                                    : undefined,
+                        sub_status: Array.isArray(filters.sub_status) && filters.sub_status.length > 0
+                            ? (filters.sub_status as string[])
+                            : undefined,
+                        loan_status: Array.isArray(filters.loan_status) && filters.loan_status.length > 0
+                            ? (filters.loan_status as string[])
+                            : undefined,
                         user_mob_num: filters.search_type === 'mob_num' && filters.search_text
                             ? (filters.search_text as string)
                             : undefined,
                         user_id: filters.search_type === 'user_id' && filters.search_text
                             ? (filters.search_text as string)
-                            : undefined,
-                        assigned_agent_id: filters.assigned_to_agent
-                            ? (filters.assigned_to_agent as string)
                             : undefined,
                     },
                     ranges: {
@@ -175,7 +229,7 @@ export const Loans: React.FC = () => {
                         updated_at: updatedAtRange,
                     },
                     text: (filters.search_type === 'name' && filters.search_text) ? (filters.search_text as string) : undefined,
-                    search_columns: (filters.search_type === 'name' && filters.search_text) ? ['fname', 'mname', 'lname'] : undefined,
+                    search_columns: undefined,
                 };
 
                 const entityResponse = await entityRoleMappingApi.getAgentEntities(entityRequest);
@@ -225,10 +279,14 @@ export const Loans: React.FC = () => {
                 // Build filters based on search type
                 const searchText = (filters.search_text as string) || '';
                 const searchType = filters.search_type as string;
+                const filterAgentId = (filters.filter_agent_id as string) || null;
+
+                // Use filtered agent_id if selected, otherwise use current agent
+                const effectiveAgentId = filterAgentId || agentId;
 
                 const request = {
-                    query_type: 'agent_all_loan' as const,
-                    agent_id: agentId,
+                    query_type: 'new_get_agent_loans' as const,
+                    agent_id: effectiveAgentId,
                     page,
                     page_size: pageSize,
                     ranges: {
@@ -238,17 +296,18 @@ export const Loans: React.FC = () => {
                     sort_by: sortByValue,
                     filters: {
                         loan_id: searchType === 'loan_id' && searchText ? searchText : undefined,
-                        sub_status:
-                            filters.sub_status && Array.isArray(filters.sub_status)
-                                ? (filters.sub_status as string[])
-                                : filters.sub_status
-                                    ? [filters.sub_status as string]
-                                    : undefined,
+                        sub_status: Array.isArray(filters.sub_status) && filters.sub_status.length > 0
+                            ? (filters.sub_status as string[])
+                            : undefined,
+                        loan_status: Array.isArray(filters.loan_status) && filters.loan_status.length > 0
+                            ? (filters.loan_status as string[])
+                            : undefined,
+                        lender_id: filters.lender_id ? (filters.lender_id as string) : undefined,
                         mob_num: searchType === 'mob_num' && searchText ? searchText : undefined,
                         'l.user_id': searchType === 'user_id' && searchText ? searchText : undefined,
                     },
                     text: (searchType === 'name' && searchText) ? searchText : undefined,
-                    search_columns: (searchType === 'name' && searchText) ? ['fname', 'mname', 'lname'] : undefined,
+                    search_columns: undefined,
                 };
 
                 const response = await loansApi.getLoanDetails(request);
@@ -289,7 +348,10 @@ export const Loans: React.FC = () => {
 
     const handleResetFilters = () => {
         setFilters({
-            sub_status: null,
+            sub_status: [],
+            loan_status: [],
+            lender_id: null,
+            filter_agent_id: null,
             search_text: '',
             search_type: null,
             date_range_field: null,
@@ -412,8 +474,27 @@ export const Loans: React.FC = () => {
         {
             key: 'sub_status',
             label: 'Sub Status',
-            type: 'select',
+            type: 'multiSelect',
             options: SUB_STATUS_OPTIONS,
+        },
+        {
+            key: 'loan_status',
+            label: 'Loan Status',
+            type: 'multiSelect',
+            options: LOAN_STATUS_OPTIONS,
+        },
+        {
+            key: 'lender_id',
+            label: 'Lender',
+            type: 'select',
+            options: LENDER_OPTIONS,
+        },
+        {
+            key: 'filter_agent_id',
+            label: 'Agent',
+            type: 'searchableSelect',
+            options: subAgentOptions,
+            placeholder: 'Select agent...',
         },
         ...(selectedRole?.role_type === 'DOCUMENT_VERIFIER'
             ? [
@@ -592,6 +673,16 @@ export const Loans: React.FC = () => {
             label: 'Agent Name',
             sortable: true,
             defaultVisible: false,
+            render: (value, row) => {
+                if (value) return String(value);
+                // Lookup agent name from subAgentOptions using agent_id
+                const agentId = row.agent_id;
+                if (agentId) {
+                    const agent = subAgentOptions.find(a => a.value === agentId);
+                    if (agent) return agent.label;
+                }
+                return '-';
+            },
         },
         {
             key: 'loan_type',
