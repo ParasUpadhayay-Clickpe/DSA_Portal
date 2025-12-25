@@ -413,6 +413,29 @@ export const Leads: React.FC = () => {
     [columns, dynamicColumns]
   );
 
+  const statusColors: Record<string, string> = {
+    APPROVED: "#10b981",
+    PENDING: "#f59e0b",
+    REJECTED: "#ef4444",
+    UNDER_REVIEW: "#3b82f6",
+    KYC_SUCCESS: "#10b981",
+    KYC_REJECTED: "#ef4444",
+  };
+
+  const mockLeadCounts = useMemo(
+    () => [
+      {
+        title: "Loan Status",
+        items: LOAN_STATUS_OPTIONS.map((opt) => ({
+          label: opt.label,
+          count: Math.floor(Math.random() * 50) + 1,
+          color: statusColors[opt.value] || "#6b7280",
+        })),
+      },
+    ],
+    []
+  );
+
   if (!isAuthenticated) return null;
 
   return (
@@ -480,6 +503,7 @@ export const Leads: React.FC = () => {
           values={filters}
           onChange={handleFilterChange}
           onReset={handleResetFilters}
+          statusCounts={mockLeadCounts}
         />
         <DataTable
           data={leads}

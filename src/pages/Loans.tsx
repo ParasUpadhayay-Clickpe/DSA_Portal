@@ -884,6 +884,49 @@ export const Loans: React.FC = () => {
     [columns, dynamicColumns]
   );
 
+  const statusColors: Record<string, string> = {
+    DISBURSED: "#10b981",
+    APPROVED: "#10b981",
+    PENDING: "#f59e0b",
+    REJECTED: "#ef4444",
+    UNDER_REVIEW: "#3b82f6",
+    KYC_SUCCESS: "#10b981",
+    KYC_REJECTED: "#ef4444",
+    FRESH_LOAN: "#6b7280",
+    LOAN_DETAILS_SUBMITTED: "#3b82f6",
+    BANK_ADDED: "#3b82f6",
+    SIGN_AGREEMENT: "#f59e0b",
+    CANCELLED: "#ef4444",
+    SKIP: "#9ca3af",
+    Active: "#10b981",
+    Closed: "#6b7280",
+    Pending: "#f59e0b",
+    Rejected: "#ef4444",
+    "Esign Completed": "#10b981",
+  };
+
+  const mockLoanCounts = useMemo(
+    () => [
+      {
+        title: "Loan Status",
+        items: LOAN_STATUS_OPTIONS.map((opt) => ({
+          label: opt.label,
+          count: Math.floor(Math.random() * 100) + 10,
+          color: statusColors[opt.value] || "#6b7280",
+        })),
+      },
+      {
+        title: "Sub Status",
+        items: SUB_STATUS_OPTIONS.map((opt) => ({
+          label: opt.label.replace(/_/g, " "),
+          count: Math.floor(Math.random() * 50) + 1,
+          color: statusColors[opt.value] || "#6b7280",
+        })),
+      },
+    ],
+    []
+  );
+
   if (!isAuthenticated) return null;
 
   return (
@@ -918,6 +961,7 @@ export const Loans: React.FC = () => {
           values={filters}
           onChange={handleFilterChange}
           onReset={handleResetFilters}
+          statusCounts={mockLoanCounts}
         />
         <DataTable
           data={loans}
