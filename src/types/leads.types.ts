@@ -14,8 +14,8 @@ export interface GetUsersFromAgentIdRequest {
     [key: string]: -1 | 1;
   };
   filters?: {
-    loan_status?: string[];
     sub_status?: string[];
+    status?: string[];
   };
   search_text?: string;
   search_type?: "number" | "name" | "id" | "email" | "agent_name";

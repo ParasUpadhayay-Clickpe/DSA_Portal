@@ -18,6 +18,14 @@ const SUB_STATUS_OPTIONS = [
   { label: "KYC_REJECTED", value: "KYC_REJECTED" },
 ];
 
+const LEAD_STATUS_OPTIONS = [
+  { label: "Pending", value: "Pending" },
+  { label: "Approved", value: "Approved" },
+  { label: "Active", value: "Active" },
+  { label: "Closed", value: "Closed" },
+  { label: "Rejected", value: "Rejected" },
+];
+
 const SEARCH_TYPE_OPTIONS = [
   { label: "Mobile Number", value: "number" },
   { label: "Name", value: "name" },
@@ -48,7 +56,8 @@ export const Leads: React.FC = () => {
   const [sortOrder, setSortOrder] = useState<"asc" | "desc" | null>(null);
 
   const [filters, setFilters] = useState<Record<string, unknown>>({
-    sub_status: null,
+    sub_status: [],
+    lead_status: [],
     date_range_field: null,
     date_range: null,
     search_text: "",
@@ -120,10 +129,16 @@ export const Leads: React.FC = () => {
         sort_by: sortByValue,
         filters: {
           sub_status:
-            filters.sub_status && Array.isArray(filters.sub_status)
+            filters.sub_status &&
+            Array.isArray(filters.sub_status) &&
+            filters.sub_status.length > 0
               ? (filters.sub_status as string[])
-              : filters.sub_status
-              ? [filters.sub_status as string]
+              : undefined,
+          lead_status:
+            filters.lead_status &&
+            Array.isArray(filters.lead_status) &&
+            filters.lead_status.length > 0
+              ? (filters.lead_status as string[])
               : undefined,
         },
         search_text: (filters.search_text as string) || undefined,
@@ -170,7 +185,8 @@ export const Leads: React.FC = () => {
 
   const handleResetFilters = () => {
     setFilters({
-      sub_status: null,
+      sub_status: [],
+      lead_status: [],
       date_range_field: null,
       date_range: null,
       search_text: "",
@@ -194,7 +210,7 @@ export const Leads: React.FC = () => {
               .join(" ");
             return name || "-";
           }
-          if (col.key === "application_status" || col.key === "loan_status")
+          if (col.key === "application_status" || col.key === "lead_status")
             return String(rawValue || "-");
           if (col.key === "income") return rawValue ? Number(rawValue) : 0;
           if (
@@ -261,9 +277,15 @@ export const Leads: React.FC = () => {
       placeholder: "Enter search text...",
     },
     {
+      key: "loan_status",
+      label: "Status",
+      type: "multiSelect",
+      options: LEAD_STATUS_OPTIONS,
+    },
+    {
       key: "sub_status",
       label: "Sub Status",
-      type: "select",
+      type: "multiSelect",
       options: SUB_STATUS_OPTIONS,
     },
     {
@@ -290,8 +312,31 @@ export const Leads: React.FC = () => {
     { key: "mob_num", label: "Mobile", sortable: true, defaultVisible: true },
     { key: "email", label: "Email", sortable: true, defaultVisible: true },
     {
-      key: "application_status",
+      key: "loan_status",
       label: "Status",
+      sortable: true,
+      defaultVisible: true,
+      render: (value) => (
+        <span
+          style={{
+            color:
+              {
+                Approved: "#10b981",
+                Pending: "#f59e0b",
+                Rejected: "#ef4444",
+                Active: "#10b981",
+                Closed: "#6b7280",
+              }[String(value || "")] || "#6b7280",
+            fontWeight: 500,
+          }}
+        >
+          {String(value || "-")}
+        </span>
+      ),
+    },
+    {
+      key: "sub_status",
+      label: "Sub Status",
       sortable: true,
       defaultVisible: true,
       render: (value) => (
@@ -303,6 +348,8 @@ export const Leads: React.FC = () => {
                 PENDING: "#f59e0b",
                 REJECTED: "#ef4444",
                 UNDER_REVIEW: "#3b82f6",
+                KYC_SUCCESS: "#10b981",
+                KYC_REJECTED: "#ef4444",
               }[String(value || "")] || "#6b7280",
             fontWeight: 500,
           }}
@@ -420,10 +467,23 @@ export const Leads: React.FC = () => {
     UNDER_REVIEW: "#3b82f6",
     KYC_SUCCESS: "#10b981",
     KYC_REJECTED: "#ef4444",
+    Approved: "#10b981",
+    Pending: "#f59e0b",
+    Rejected: "#ef4444",
+    Active: "#10b981",
+    Closed: "#6b7280",
   };
 
   const mockLeadCounts = useMemo(
     () => [
+      {
+        title: "Status",
+        items: LEAD_STATUS_OPTIONS.map((opt) => ({
+          label: opt.label,
+          count: Math.floor(Math.random() * 100) + 10,
+          color: statusColors[opt.value] || "#6b7280",
+        })),
+      },
       {
         title: "Sub Status",
         items: SUB_STATUS_OPTIONS.map((opt) => ({
