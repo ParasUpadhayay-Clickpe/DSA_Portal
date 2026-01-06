@@ -12,6 +12,7 @@ import {
   UserPlusIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
+  PackageIcon,
 } from "@/components/icons";
 import { getExternalURL } from "@/config";
 import styles from "./Sidebar.module.css";
@@ -34,6 +35,7 @@ const menuItems: MenuItem[] = [
   { label: "Leads", icon: <UsersIcon />, path: "/leads" },
   { label: "Loans", icon: <FileTextIcon />, path: "/loans" },
   { label: "Sub Agents", icon: <NetworkIcon />, path: "/sub-agents" },
+  { label: "Products", icon: <PackageIcon />, path: "/products" },
   { label: "Profile", icon: <UserIcon />, path: "/profile" },
 ];
 

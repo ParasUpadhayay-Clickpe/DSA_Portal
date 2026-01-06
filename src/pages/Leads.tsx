@@ -9,7 +9,7 @@ import type { UserLead } from "@/types/leads.types";
 import { exportToExcel, type ExportColumn } from "@/utils/exportToExcel";
 import styles from "./Leads.module.css";
 
-const LOAN_STATUS_OPTIONS = [
+const SUB_STATUS_OPTIONS = [
   { label: "APPROVED", value: "APPROVED" },
   { label: "PENDING", value: "PENDING" },
   { label: "REJECTED", value: "REJECTED" },
@@ -48,7 +48,7 @@ export const Leads: React.FC = () => {
   const [sortOrder, setSortOrder] = useState<"asc" | "desc" | null>(null);
 
   const [filters, setFilters] = useState<Record<string, unknown>>({
-    loan_status: null,
+    sub_status: null,
     date_range_field: null,
     date_range: null,
     search_text: "",
@@ -119,11 +119,11 @@ export const Leads: React.FC = () => {
         },
         sort_by: sortByValue,
         filters: {
-          loan_status:
-            filters.loan_status && Array.isArray(filters.loan_status)
-              ? (filters.loan_status as string[])
-              : filters.loan_status
-              ? [filters.loan_status as string]
+          sub_status:
+            filters.sub_status && Array.isArray(filters.sub_status)
+              ? (filters.sub_status as string[])
+              : filters.sub_status
+              ? [filters.sub_status as string]
               : undefined,
         },
         search_text: (filters.search_text as string) || undefined,
@@ -170,7 +170,7 @@ export const Leads: React.FC = () => {
 
   const handleResetFilters = () => {
     setFilters({
-      loan_status: null,
+      sub_status: null,
       date_range_field: null,
       date_range: null,
       search_text: "",
@@ -261,10 +261,10 @@ export const Leads: React.FC = () => {
       placeholder: "Enter search text...",
     },
     {
-      key: "loan_status",
-      label: "Loan Status",
+      key: "sub_status",
+      label: "Sub Status",
       type: "select",
-      options: LOAN_STATUS_OPTIONS,
+      options: SUB_STATUS_OPTIONS,
     },
     {
       key: "date_range",
@@ -425,8 +425,8 @@ export const Leads: React.FC = () => {
   const mockLeadCounts = useMemo(
     () => [
       {
-        title: "Loan Status",
-        items: LOAN_STATUS_OPTIONS.map((opt) => ({
+        title: "Sub Status",
+        items: SUB_STATUS_OPTIONS.map((opt) => ({
           label: opt.label,
           count: Math.floor(Math.random() * 50) + 1,
           color: statusColors[opt.value] || "#6b7280",
