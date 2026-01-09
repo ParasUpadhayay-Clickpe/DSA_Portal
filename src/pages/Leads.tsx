@@ -10,20 +10,29 @@ import { exportToExcel, type ExportColumn } from "@/utils/exportToExcel";
 import styles from "./Leads.module.css";
 
 const SUB_STATUS_OPTIONS = [
-  { label: "APPROVED", value: "APPROVED" },
-  { label: "PENDING", value: "PENDING" },
-  { label: "REJECTED", value: "REJECTED" },
-  { label: "UNDER_REVIEW", value: "UNDER_REVIEW" },
-  { label: "KYC_SUCCESS", value: "KYC_SUCCESS" },
-  { label: "KYC_REJECTED", value: "KYC_REJECTED" },
+  { label: "Fresh Loan", value: "FRESH_LOAN" },
+  { label: "Closed", value: "CLOSED" },
+  { label: "Loan Rejected", value: "LOAN_REJECTED" },
+  { label: "Disbursed", value: "DISBURSED" },
+  { label: "Loan Details Submitted", value: "LOAN_DETAILS_SUBMITTED" },
+  { label: "Bank Added", value: "BANK_ADDED" },
+  { label: "Sign Agreement", value: "SIGN_AGREEMENT" },
+  { label: "KYC Rejected", value: "KYC_REJECTED" },
+  { label: "Cancelled", value: "CANCELLED" },
+  { label: "Under Review", value: "UNDER_REVIEW" },
+  { label: "Doc Review", value: "DOC_REVIEW" },
+  { label: "Loan Approved", value: "LOAN_APPROVED" },
+  { label: "Skip", value: "Skip" },
 ];
 
 const LOAN_STATUS_OPTIONS = [
-  { label: "Pending", value: "Pending" },
-  { label: "Approved", value: "Approved" },
-  { label: "Active", value: "Active" },
+  { label: "Legal Proceeding", value: "Legal Proceeding" },
   { label: "Closed", value: "Closed" },
+  { label: "Active", value: "Active" },
   { label: "Rejected", value: "Rejected" },
+  { label: "Pending", value: "Pending" },
+  { label: "Esign Completed", value: "Esign Completed" },
+  { label: "Approved", value: "Approved" },
 ];
 
 const SEARCH_TYPE_OPTIONS = [
