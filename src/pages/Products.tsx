@@ -13,10 +13,8 @@ import {
 } from "@/components/icons";
 import { MainLayout } from "@/layouts/MainLayout";
 import { useAuth } from "@/hooks";
-// Import the API instance
 import { productsApi } from "@/api/products.api";
-// Ideally, import these types from your @/types/products.types file
-// But I will keep local interfaces compatible with the API response for this file to work standalone if needed
+
 interface ProductContent {
   metric?: string;
   label?: string;
@@ -37,7 +35,6 @@ interface Product {
   content?: ProductContent;
 }
 
-// Mapped type for Frontend UI
 interface UIProduct extends Product {
   title: string;
   sub: string;
@@ -54,7 +51,6 @@ interface ProductGroup {
   cards: UIProduct[];
 }
 
-// Helper to assign icons/colors if backend doesn't provide them
 const getProductStyle = (category: string, index: number) => {
   const colors = ["orange500", "emerald500", "indigo600", "sky600", "blue600"];
   const icons = [
@@ -73,6 +69,8 @@ const getProductStyle = (category: string, index: number) => {
 const Card = ({ data }: { data: UIProduct }) => {
   const iconBgClass = styles[data.colorClass] || styles.blue600;
 
+  console.log(data);
+
   return (
     <div className={styles.cardWrapper}>
       <div className={styles.card}>
@@ -80,12 +78,11 @@ const Card = ({ data }: { data: UIProduct }) => {
 
         <div className={styles.cardHeader}>
           <div className={`${styles.iconBox} ${iconBgClass}`}>
-            {/* Use Backend Image if available, else fallback to Icon */}
             {data.imageUrl ? (
               <img
                 src={data.imageUrl}
                 alt={data.title}
-                className="w-6 h-6 object-contain"
+                className={styles.cardImage}
               />
             ) : (
               data.icon
@@ -145,7 +142,6 @@ export const Products: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  // Helper to map backend data to frontend categories
   const categorizeProducts = (rawProducts: Product[]): ProductGroup => {
     const group: ProductGroup = { loans: [], savings: [], cards: [] };
 
@@ -157,7 +153,6 @@ export const Products: React.FC = () => {
         ...p,
         title: p.name,
         sub: p.lender,
-        // Fallback to content fields or defaults
         metric: p.content?.metric || "N/A",
         label: p.content?.label || "Details",
         tag: p.content?.tag,
@@ -165,13 +160,11 @@ export const Products: React.FC = () => {
         icon: styles.icon,
       };
 
-      // Normalize backend category to frontend keys
       const cat = (p.category || "").toLowerCase();
       if (cat.includes("loan")) group.loans.push(uiProduct);
       else if (cat.includes("saving")) group.savings.push(uiProduct);
       else if (cat.includes("card")) group.cards.push(uiProduct);
       else {
-        // Default bucket for other categories
         group.cards.push(uiProduct);
       }
     });
@@ -191,7 +184,6 @@ export const Products: React.FC = () => {
     setLoading(true);
     setError("");
 
-    // Using the API class instead of direct fetch
     const result = await productsApi.getProducts({ channel: "AGENT" });
 
     if (result.status === "Success" && Array.isArray(result.response)) {
@@ -209,16 +201,13 @@ export const Products: React.FC = () => {
     setLoading(true);
     setError("");
 
-    // Using the API class for eligibility check
     const result = await productsApi.checkEligibility({ pincode: zipCode });
 
     if (result.status === "Success" && result.response) {
-      // Backend returns an object with 'eligible_products' array
       const eligible = result.response.eligible_products || [];
       const grouped = categorizeProducts(eligible);
       setProducts(grouped);
 
-      // Optional: Show message if no products found for this pin
       if (eligible.length === 0) {
         setError(`No eligible products found for pincode ${zipCode}`);
       }
@@ -297,7 +286,6 @@ export const Products: React.FC = () => {
               </section>
             )}
 
-            {/* SAVINGS SECTION */}
             {products.savings.length > 0 && (
               <section className={styles.section}>
                 <div className={styles.sectionHeader}>
@@ -314,7 +302,6 @@ export const Products: React.FC = () => {
               </section>
             )}
 
-            {/* CARDS SECTION */}
             {products.cards.length > 0 && (
               <section className={styles.section}>
                 <div className={styles.sectionHeader}>
@@ -331,7 +318,6 @@ export const Products: React.FC = () => {
               </section>
             )}
 
-            {/* Empty State */}
             {products.loans.length === 0 &&
               products.savings.length === 0 &&
               products.cards.length === 0 && (
