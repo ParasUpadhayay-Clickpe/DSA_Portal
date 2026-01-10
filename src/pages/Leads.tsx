@@ -10,20 +10,29 @@ import { exportToExcel, type ExportColumn } from "@/utils/exportToExcel";
 import styles from "./Leads.module.css";
 
 const SUB_STATUS_OPTIONS = [
-  { label: "APPROVED", value: "APPROVED" },
-  { label: "PENDING", value: "PENDING" },
-  { label: "REJECTED", value: "REJECTED" },
-  { label: "UNDER_REVIEW", value: "UNDER_REVIEW" },
-  { label: "KYC_SUCCESS", value: "KYC_SUCCESS" },
-  { label: "KYC_REJECTED", value: "KYC_REJECTED" },
+  { label: "Fresh Loan", value: "FRESH_LOAN" },
+  { label: "Closed", value: "CLOSED" },
+  { label: "Loan Rejected", value: "LOAN_REJECTED" },
+  { label: "Disbursed", value: "DISBURSED" },
+  { label: "Loan Details Submitted", value: "LOAN_DETAILS_SUBMITTED" },
+  { label: "Bank Added", value: "BANK_ADDED" },
+  { label: "Sign Agreement", value: "SIGN_AGREEMENT" },
+  { label: "KYC Rejected", value: "KYC_REJECTED" },
+  { label: "Cancelled", value: "CANCELLED" },
+  { label: "Under Review", value: "UNDER_REVIEW" },
+  { label: "Doc Review", value: "DOC_REVIEW" },
+  { label: "Loan Approved", value: "LOAN_APPROVED" },
+  { label: "Skip", value: "Skip" },
 ];
 
-const LEAD_STATUS_OPTIONS = [
-  { label: "Pending", value: "Pending" },
-  { label: "Approved", value: "Approved" },
-  { label: "Active", value: "Active" },
+const LOAN_STATUS_OPTIONS = [
+  { label: "Legal Proceeding", value: "Legal Proceeding" },
   { label: "Closed", value: "Closed" },
+  { label: "Active", value: "Active" },
   { label: "Rejected", value: "Rejected" },
+  { label: "Pending", value: "Pending" },
+  { label: "Esign Completed", value: "Esign Completed" },
+  { label: "Approved", value: "Approved" },
 ];
 
 const SEARCH_TYPE_OPTIONS = [
@@ -57,7 +66,7 @@ export const Leads: React.FC = () => {
 
   const [filters, setFilters] = useState<Record<string, unknown>>({
     sub_status: [],
-    lead_status: [],
+    loan_status: [],
     date_range_field: null,
     date_range: null,
     search_text: "",
@@ -89,9 +98,9 @@ export const Leads: React.FC = () => {
       const dateRange: [string | null, string | null] =
         Array.isArray(filters.date_range) && filters.date_range.length === 2
           ? [
-              filters.date_range[0] as string | null,
-              filters.date_range[1] as string | null,
-            ]
+            filters.date_range[0] as string | null,
+            filters.date_range[1] as string | null,
+          ]
           : [null, null];
 
       const createdAtRange: [string | null, string | null] =
@@ -110,13 +119,13 @@ export const Leads: React.FC = () => {
         | "email"
         | "agent_name"
         | undefined = filters.search_type
-        ? (filters.search_type as
+          ? (filters.search_type as
             | "number"
             | "name"
             | "id"
             | "email"
             | "agent_name")
-        : undefined;
+          : undefined;
 
       const request = {
         agent_id: agentId,
@@ -130,15 +139,15 @@ export const Leads: React.FC = () => {
         filters: {
           sub_status:
             filters.sub_status &&
-            Array.isArray(filters.sub_status) &&
-            filters.sub_status.length > 0
+              Array.isArray(filters.sub_status) &&
+              filters.sub_status.length > 0
               ? (filters.sub_status as string[])
               : undefined,
-          lead_status:
-            filters.lead_status &&
-            Array.isArray(filters.lead_status) &&
-            filters.lead_status.length > 0
-              ? (filters.lead_status as string[])
+          loan_status:
+            filters.loan_status &&
+              Array.isArray(filters.loan_status) &&
+              filters.loan_status.length > 0
+              ? (filters.loan_status as string[])
               : undefined,
         },
         search_text: (filters.search_text as string) || undefined,
@@ -151,7 +160,7 @@ export const Leads: React.FC = () => {
         setLeads(response.response);
         setTotal(
           response.pagination_metadata?.total_records ||
-            response.response.length
+          response.response.length
         );
       } else {
         setError(response.message || "Failed to fetch leads");
@@ -186,7 +195,7 @@ export const Leads: React.FC = () => {
   const handleResetFilters = () => {
     setFilters({
       sub_status: [],
-      lead_status: [],
+      loan_status: [],
       date_range_field: null,
       date_range: null,
       search_text: "",
@@ -210,7 +219,7 @@ export const Leads: React.FC = () => {
               .join(" ");
             return name || "-";
           }
-          if (col.key === "application_status" || col.key === "lead_status")
+          if (col.key === "application_status" || col.key === "loan_status")
             return String(rawValue || "-");
           if (col.key === "income") return rawValue ? Number(rawValue) : 0;
           if (
@@ -251,13 +260,11 @@ export const Leads: React.FC = () => {
     const encodedMobNum = mobNum ? btoa(String(mobNum).trim()) : "";
     let url = "";
     if (type === "allLenders") {
-      url = `https://login.clickpe.ai/login?agentId=${agentId}${
-        encodedMobNum ? `&m=${encodedMobNum}` : ""
-      }`;
+      url = `https://login.clickpe.ai/login?agentId=${agentId}${encodedMobNum ? `&m=${encodedMobNum}` : ""
+        }`;
     } else {
-      url = `https://muthoot.clickpe.ai/?agentId=${agentId}${
-        encodedMobNum ? `&m=${encodedMobNum}` : ""
-      }`;
+      url = `https://muthoot.clickpe.ai/?agentId=${agentId}${encodedMobNum ? `&m=${encodedMobNum}` : ""
+        }`;
     }
     window.open(url, "_blank");
     setShowCreateLeadMenu(false);
@@ -280,7 +287,7 @@ export const Leads: React.FC = () => {
       key: "loan_status",
       label: "Status",
       type: "multiSelect",
-      options: LEAD_STATUS_OPTIONS,
+      options: LOAN_STATUS_OPTIONS,
     },
     {
       key: "sub_status",
@@ -478,7 +485,7 @@ export const Leads: React.FC = () => {
     () => [
       {
         title: "Status",
-        items: LEAD_STATUS_OPTIONS.map((opt) => ({
+        items: LOAN_STATUS_OPTIONS.map((opt) => ({
           label: opt.label,
           count: Math.floor(Math.random() * 100) + 10,
           color: statusColors[opt.value] || "#6b7280",

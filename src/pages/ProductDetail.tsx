@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import styles from "./ProductDetail.module.css";
 import { MainLayout } from "@/layouts/MainLayout";
 import { useAuth } from "@/hooks";
+import { productsApi } from "@/api/products.api";
 import { CoinsIcon, UserPlusIcon, ArrowRightIcon } from "@/components/icons";
 
 type BaseContent = string[];
@@ -19,18 +20,12 @@ type SectionData = {
   items: BaseContent | FaqContent | TncContent;
 };
 
-type ProductData = {
+type UIProductData = {
   id: string;
   name: string;
   category: string;
   imageUrl?: string;
-
   isPanIndia: boolean;
-  negativeList?: {
-    states?: string[];
-    zipCodes?: string[];
-  };
-
   stats: {
     commission: string;
     potential: string;
@@ -42,173 +37,6 @@ type ProductData = {
     tnc: SectionData;
     faq: SectionData;
   };
-};
-
-const PRODUCT_DB: Record<string, ProductData> = {
-  muthoot: {
-    id: "muthoot",
-    name: "MFL Business Loan (EDI)",
-    category: "Loans",
-    imageUrl: "https://www.chittorgarh.net/images/ipo/muthoot-fincorp-logo.png",
-
-    isPanIndia: false,
-    negativeList: {
-      states: ["Jammu and Kashmir", "North East"],
-      zipCodes: [],
-    },
-
-    stats: {
-      commission: "2.5%",
-      potential: "₹15,000",
-    },
-    details: {
-      benefits: {
-        title: "Key Benefits",
-        subtitle: "Why your customers will love this product.",
-        items: [
-          "Loan Amount: ₹50,000 to ₹3,00,000 based on eligibility.",
-          "Flexible EDI Tenures: 104, 156, 234, or 313 days.",
-          "NTC (New to Credit) customers are accepted.",
-          "Daily repayment via Equated Daily Instalments helps manage cashflow.",
-          "Fast disbursement for micro & small enterprises.",
-        ],
-      },
-      sell: {
-        title: "Target Audience",
-        subtitle: "Focus on these customer segments to maximize conversion.",
-        items: [
-          "Self-Employed Individuals only (Salaried profiles are rejected).",
-          "Business Vintage: Minimum 2 years (Incorporation date on Udyam).",
-          "Shop owners with Stock Value of at least ₹3 Lakhs.",
-          "Total family income per annum should be more than ₹1 Lakh.",
-        ],
-      },
-      req: {
-        title: "Eligibility Requirements",
-        subtitle: "Ensure customers meet these criteria before applying.",
-        items: [
-          "Age: 21 to 60 Years.",
-          "CIBIL Score: Minimum 650.",
-          "Distance: Shop must be within 15-20 km of Home/Aadhaar address.",
-          "Banking: Min 6 months statement (Savings/Current) with ₹15k/month credit.",
-          "Bank Account: Must be Nationalised (SBI, ICICI, Kotak, etc.). Joint accounts not accepted.",
-          "Udyam Aadhaar: Incorporation date must be at least 2 years old.",
-          "Shop Board: Permanent board (Painted/Flex) is mandatory. Paper/Tape not allowed.",
-        ],
-      },
-      tnc: {
-        title: "Terms & Conditions",
-        subtitle: "Please read these carefully before pitching.",
-        items: {
-          general: [
-            "ROI up to 28% (Risk Based) and Processing Fee approx 3%.",
-            "After DigiLocker, VKYC must be completed within 2 days or case is rejected.",
-            "Stock Item must be seen during Video PD and value > ₹3 Lakhs.",
-          ],
-          dos: [
-            "Ensure Applicant Name matches exactly on Aadhaar, PAN, and Shop Board.",
-            "Verify Applicant Number on Truecaller (Must match Applicant or Business Name).",
-            "Ensure Shop Board is hanged properly with nails and written in big fonts/paint.",
-            "Home address (owned or rented) MUST match Aadhaar address.",
-          ],
-          donts: [
-            "Do not login cases with Overdue amount > ₹5,000 in existing loans.",
-            "No EMI bounces allowed in the last 3 months (Max 1 allowed in 6 months).",
-            "Do not exceed 5 BL/PL enquiries in the last 30 days.",
-            "Do not apply if HDFC Bank account (for EMI cases).",
-          ],
-        },
-      },
-      faq: {
-        title: "Frequently Asked Questions",
-        subtitle: "Common queries from agents and customers.",
-        items: [
-          {
-            question: "What are the Shop Name Board rules?",
-            answer:
-              "The board must be painted on a wall or a permanent flex banner properly hanged. Paper prints, temporary banners, or tape are strictly NOT allowed and will lead to rejection.",
-            imageUrls: ["/s8-6.jpg", "/s8-4.jpg"],
-          },
-          {
-            question: "Is there a distance limit?",
-            answer:
-              "Yes, the Shop/Office address must be within 20 km of the customer's Home/Aadhaar address.",
-          },
-          {
-            question: "What are the banking bounce rules?",
-            answer:
-              "No EMI bounces in the last 90 days. Max 1 EMI bounce in last 6 months. Inward cheque returns should not exceed 3 in 180 days.",
-          },
-        ],
-      },
-    },
-  },
-
-  "savings-gold": {
-    id: "savings-gold",
-    name: "Gold Savings",
-    category: "Savings",
-    imageUrl: "https://cdn-icons-png.flaticon.com/512/2953/2953363.png",
-
-    isPanIndia: true,
-
-    stats: {
-      commission: "₹500",
-      potential: "₹2,000",
-    },
-    details: {
-      benefits: {
-        title: "Account Benefits",
-        subtitle: "Premium features for gold members.",
-        items: [
-          "7.5% Interest Rate per annum.",
-          "Zero Balance Account maintenance.",
-          "Free Platinum Debit Card.",
-        ],
-      },
-      sell: {
-        title: "Who to pitch?",
-        subtitle: "Ideal for salaried individuals.",
-        items: [
-          "Salaried employees with >50k income.",
-          "Senior citizens looking for safety.",
-        ],
-      },
-      req: {
-        title: "Documents Required",
-        subtitle: "Simple KYC process.",
-        items: ["Aadhar Card", "PAN Card", "One passport size photo"],
-      },
-      tnc: {
-        title: "Terms of Use",
-        subtitle: "Banking policies apply.",
-        items: {
-          general: [
-            "Interest is calculated daily and credited quarterly.",
-            "Debit card charges apply after 1st year.",
-          ],
-          dos: [
-            "Ensure signature matches PAN card.",
-            "Use blue ink for forms.",
-          ],
-          donts: [
-            "Don't accept overwriting on forms.",
-            "Don't share customer OTP.",
-          ],
-        },
-      },
-      faq: {
-        title: "FAQs",
-        subtitle: "Help Center",
-        items: [
-          {
-            question: "Is there a minimum balance?",
-            answer: "No, this is a zero balance account for the first year.",
-          },
-        ],
-      },
-    },
-  },
 };
 
 const CheckListItem = ({ text }: { text: string }) => (
@@ -235,7 +63,7 @@ const AccordionItem = ({
         className={styles.accordionHeader}
       >
         {question}
-        <span className={styles.accordionIcon}>+</span>
+        <span className={styles.accordionIcon}>{isOpen ? "−" : "+"}</span>
       </button>
       {isOpen && (
         <div className={styles.accordionBody}>
@@ -264,38 +92,147 @@ export const ProductDetail: React.FC = () => {
   const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
 
+  const [product, setProduct] = useState<UIProductData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
   const [pincode, setPincode] = useState("");
+  const [checkingEligibility, setCheckingEligibility] = useState(false);
+  const [eligibilityMsg, setEligibilityMsg] = useState<{
+    type: "success" | "error";
+    msg: string;
+  } | null>(null);
 
   const [activeMainTab, setActiveMainTab] = useState<
     "details" | "customers" | "earnings"
   >("details");
 
   const [activeSubTab, setActiveSubTab] =
-    useState<keyof ProductData["details"]>("benefits");
-
-  const product = productId ? PRODUCT_DB[productId] : null;
+    useState<keyof UIProductData["details"]>("benefits");
 
   useEffect(() => {
     if (!isAuthenticated) navigate("/agent-login");
   }, [isAuthenticated, navigate]);
 
-  const handleCheckEligibility = () => {
-    if (!pincode) return;
-    console.log(
-      `Checking eligibility for product ${product?.id} in ${pincode}`
-    );
-    console.log(`Is Pan India: ${product?.isPanIndia}`);
+  const transformApiProductToUI = (apiData: any): UIProductData => {
+    const content = apiData.content || {};
+
+    return {
+      id: apiData.id,
+      name: apiData.name,
+      category: apiData.category,
+      imageUrl: apiData.imageUrl,
+      isPanIndia: apiData.isPanIndia,
+      stats: {
+        commission: apiData.metric || "N/A",
+        potential: "Check App",
+      },
+      details: {
+        benefits: {
+          title: "Key Benefits",
+          subtitle: "Why customers love this product",
+          items: content.benefits || [],
+        },
+        sell: {
+          title: "Target Audience",
+          subtitle: "Who should you sell this to?",
+          items: content.whomToSell || [],
+        },
+        req: {
+          title: "Requirements",
+          subtitle: "Mandatory conditions for approval",
+          items: content.requirements || [],
+        },
+        tnc: {
+          title: "Terms & Conditions",
+          subtitle: "Important guidelines to follow",
+          items: {
+            general: content.terms || [],
+            dos: content.dos || [],
+            donts: content.donts || [],
+          },
+        },
+        faq: {
+          title: "Frequently Asked Questions",
+          subtitle: "Common doubts clarified",
+          items: (content.faq || []).map((f: any) => ({
+            question: f.q,
+            answer: f.a,
+            imageUrls: f.imageUrls,
+          })),
+        },
+      },
+    };
   };
 
-  if (!product) {
-    return (
-      <MainLayout>
-        <div className={styles.pageContainer}>Product not found</div>
-      </MainLayout>
-    );
-  }
+  const fetchProductDetails = useCallback(async () => {
+    if (!productId) return;
+
+    setLoading(true);
+    setError("");
+
+    try {
+      const result = await productsApi.getProducts({ channel: "AGENT" });
+
+      if (result.status === "Success" && Array.isArray(result.response)) {
+        const foundProduct = result.response.find(
+          (p: any) => p.id === productId
+        );
+
+        if (foundProduct) {
+          const formatted = transformApiProductToUI(foundProduct);
+          setProduct(formatted);
+        } else {
+          setError("Product not found in catalog.");
+        }
+      } else {
+        setError(result.message || "Failed to fetch product details.");
+      }
+    } catch (err) {
+      setError("An unexpected error occurred.");
+    } finally {
+      setLoading(false);
+    }
+  }, [productId]);
+
+  useEffect(() => {
+    fetchProductDetails();
+  }, [fetchProductDetails]);
+
+  const handleCheckEligibility = async () => {
+    if (!pincode || pincode.length !== 6) return;
+
+    setCheckingEligibility(true);
+    setEligibilityMsg(null);
+
+    const result = await productsApi.checkEligibility({ pincode });
+
+    if (result.status === "Success" && result.response) {
+      const eligibleProducts = result.response.eligible_products || [];
+      const isEligible = eligibleProducts.some((p: any) => p.id === productId);
+
+      if (isEligible) {
+        setEligibilityMsg({
+          type: "success",
+          msg: "Service available in this pincode!",
+        });
+      } else {
+        setEligibilityMsg({
+          type: "error",
+          msg: "Service NOT available in this area.",
+        });
+      }
+    } else {
+      setEligibilityMsg({
+        type: "error",
+        msg: result.message || "Check failed",
+      });
+    }
+    setCheckingEligibility(false);
+  };
 
   const renderDetailsContent = () => {
+    if (!product) return null;
     const sectionData = product.details[activeSubTab];
     if (!sectionData) return null;
 
@@ -314,6 +251,9 @@ export const ProductDetail: React.FC = () => {
                 imageUrls={faq.imageUrls}
               />
             ))}
+            {(sectionData.items as FaqContent).length === 0 && (
+              <p className="text-gray-500">No FAQs available.</p>
+            )}
           </div>
         )}
 
@@ -343,6 +283,9 @@ export const ProductDetail: React.FC = () => {
                         {item}
                       </li>
                     ))}
+                    {(sectionData.items as TncContent).dos.length === 0 && (
+                      <li className={styles.ddItem}>No specific Do's</li>
+                    )}
                   </ul>
                 </div>
               </div>
@@ -365,6 +308,9 @@ export const ProductDetail: React.FC = () => {
                         </li>
                       )
                     )}
+                    {(sectionData.items as TncContent).donts.length === 0 && (
+                      <li className={styles.ddItem}>No specific Don'ts</li>
+                    )}
                   </ul>
                 </div>
               </div>
@@ -377,11 +323,48 @@ export const ProductDetail: React.FC = () => {
             {(sectionData.items as BaseContent).map((item, idx) => (
               <CheckListItem key={idx} text={item} />
             ))}
+            {(sectionData.items as BaseContent).length === 0 && (
+              <p className="text-gray-500">No information available.</p>
+            )}
           </ul>
         )}
       </div>
     );
   };
+
+  if (loading) {
+    return (
+      <MainLayout>
+        <div className={styles.pageContainer}>
+          <div className="flex justify-center items-center h-[60vh]">
+            <div className="animate-pulse text-xl text-blue-900 font-semibold">
+              Loading Details...
+            </div>
+          </div>
+        </div>
+      </MainLayout>
+    );
+  }
+
+  if (error || !product) {
+    return (
+      <MainLayout>
+        <div className={styles.pageContainer}>
+          <div className="flex flex-col justify-center items-center h-[60vh] gap-4">
+            <div className="text-red-500 text-lg font-medium">
+              {error || "Product not found"}
+            </div>
+            <button
+              onClick={() => navigate("/products")}
+              className={styles.backBtn}
+            >
+              Back to Products
+            </button>
+          </div>
+        </div>
+      </MainLayout>
+    );
+  }
 
   return (
     <MainLayout>
@@ -428,10 +411,22 @@ export const ProductDetail: React.FC = () => {
               <button
                 className={styles.checkBtn}
                 onClick={handleCheckEligibility}
+                disabled={checkingEligibility}
               >
-                Check
+                {checkingEligibility ? "..." : "Check"}
               </button>
             </div>
+            {eligibilityMsg && (
+              <div
+                className={`text-xs mt-2 font-medium ${
+                  eligibilityMsg.type === "success"
+                    ? "text-green-600"
+                    : "text-red-500"
+                }`}
+              >
+                {eligibilityMsg.msg}
+              </div>
+            )}
           </div>
         </div>
 
