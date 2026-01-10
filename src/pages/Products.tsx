@@ -13,74 +13,64 @@ import {
 } from "@/components/icons";
 import { MainLayout } from "@/layouts/MainLayout";
 import { useAuth } from "@/hooks";
+// Import the API instance
+import { productsApi } from "@/api/products.api";
+// Ideally, import these types from your @/types/products.types file
+// But I will keep local interfaces compatible with the API response for this file to work standalone if needed
+interface ProductContent {
+  metric?: string;
+  label?: string;
+  tag?: string;
+  colorClass?: string;
+  [key: string]: any;
+}
 
-const PRODUCT_DATA = {
-  loans: [
-    {
-      id: "muthoot",
-      title: "MFL Business Loan (EDI)",
-      sub: "Working Capital & Daily Repayment",
-      metric: "24% – 28%",
-      label: "Interest Rate (p.a.)",
-      icon: <BriefcaseIcon className={styles.iconSvg} />,
-      colorClass: "orange500",
-      tag: "Popular",
-    },
-  ],
-  savings: [
-    {
-      id: "savings-gold",
-      title: "Gold Savings",
-      sub: "High Interest Yield",
-      metric: "7.5%",
-      label: "APY",
-      icon: <TrendingUpIcon className={styles.iconSvg} />,
-      colorClass: "emerald500",
-      tag: "Best Value",
-    },
-    {
-      id: "savings-salary",
-      title: "Salary Plus",
-      sub: "Zero Balance Account",
-      metric: "Free",
-      label: "Maintenance",
-      icon: <LandmarkIcon className={styles.iconSvg} />,
-      colorClass: "teal500",
-    },
-  ],
-  cards: [
-    {
-      id: "card-elite",
-      title: "Elite World",
-      sub: "Premium Lifestyle",
-      metric: "5x",
-      label: "Rewards",
-      icon: <ShieldCheckIcon className={styles.iconSvg} />,
-      colorClass: "indigo600",
-      tag: "Premium",
-    },
-    {
-      id: "card-travel",
-      title: "JetSetter",
-      sub: "0% Forex Fees",
-      metric: "3%",
-      label: "Cashback",
-      icon: <BriefcaseIcon className={styles.iconSvg} />,
-      colorClass: "sky600",
-    },
-    {
-      id: "card-shop",
-      title: "Shopper's Edge",
-      sub: "Retail Benefits",
-      metric: "Flat 2%",
-      label: "Discount",
-      icon: <UserPlusIcon className={styles.iconSvg} />,
-      colorClass: "blue600",
-    },
-  ],
+interface Product {
+  id: string;
+  code: string;
+  name: string;
+  category: string;
+  lender: string;
+  imageUrl?: string;
+  status: string;
+  isPanIndia: boolean;
+  content?: ProductContent;
+}
+
+// Mapped type for Frontend UI
+interface UIProduct extends Product {
+  title: string;
+  sub: string;
+  icon: React.ReactNode;
+  metric: string;
+  label: string;
+  colorClass: string;
+  tag?: string;
+}
+
+interface ProductGroup {
+  loans: UIProduct[];
+  savings: UIProduct[];
+  cards: UIProduct[];
+}
+
+// Helper to assign icons/colors if backend doesn't provide them
+const getProductStyle = (category: string, index: number) => {
+  const colors = ["orange500", "emerald500", "indigo600", "sky600", "blue600"];
+  const icons = [
+    <BriefcaseIcon className={styles.iconSvg} key="brief" />,
+    <TrendingUpIcon className={styles.iconSvg} key="trend" />,
+    <ShieldCheckIcon className={styles.iconSvg} key="shield" />,
+    <LandmarkIcon className={styles.iconSvg} key="land" />,
+    <UserPlusIcon className={styles.iconSvg} key="user" />,
+  ];
+  return {
+    color: colors[index % colors.length],
+    icon: icons[index % icons.length],
+  };
 };
 
-const Card = ({ data }: { data: any }) => {
+const Card = ({ data }: { data: UIProduct }) => {
   const iconBgClass = styles[data.colorClass] || styles.blue600;
 
   return (
@@ -89,7 +79,18 @@ const Card = ({ data }: { data: any }) => {
         <div className={styles.cardOverlay} />
 
         <div className={styles.cardHeader}>
-          <div className={`${styles.iconBox} ${iconBgClass}`}>{data.icon}</div>
+          <div className={`${styles.iconBox} ${iconBgClass}`}>
+            {/* Use Backend Image if available, else fallback to Icon */}
+            {data.imageUrl ? (
+              <img
+                src={data.imageUrl}
+                alt={data.title}
+                className="w-6 h-6 object-contain"
+              />
+            ) : (
+              data.icon
+            )}
+          </div>
 
           <div className={styles.headerActions}>
             {data.tag && <span className={styles.tag}>{data.tag}</span>}
@@ -136,16 +137,96 @@ export const Products: React.FC = () => {
   const { isAuthenticated } = useAuth();
 
   const [zipCode, setZipCode] = useState("");
+  const [products, setProducts] = useState<ProductGroup>({
+    loans: [],
+    savings: [],
+    cards: [],
+  });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  // Helper to map backend data to frontend categories
+  const categorizeProducts = (rawProducts: Product[]): ProductGroup => {
+    const group: ProductGroup = { loans: [], savings: [], cards: [] };
+
+    if (!Array.isArray(rawProducts)) return group;
+
+    rawProducts.forEach((p, index) => {
+      const styles = getProductStyle(p.category || "other", index);
+      const uiProduct: UIProduct = {
+        ...p,
+        title: p.name,
+        sub: p.lender,
+        // Fallback to content fields or defaults
+        metric: p.content?.metric || "N/A",
+        label: p.content?.label || "Details",
+        tag: p.content?.tag,
+        colorClass: p.content?.colorClass || styles.color,
+        icon: styles.icon,
+      };
+
+      // Normalize backend category to frontend keys
+      const cat = (p.category || "").toLowerCase();
+      if (cat.includes("loan")) group.loans.push(uiProduct);
+      else if (cat.includes("saving")) group.savings.push(uiProduct);
+      else if (cat.includes("card")) group.cards.push(uiProduct);
+      else {
+        // Default bucket for other categories
+        group.cards.push(uiProduct);
+      }
+    });
+    return group;
+  };
 
   useEffect(() => {
     if (!isAuthenticated) {
       navigate("/agent-login");
+      return;
     }
+    fetchProducts();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthenticated, navigate]);
 
-  const handleCheck = () => {
-    if (!zipCode) return;
-    console.log("Filtering for:", zipCode);
+  const fetchProducts = async () => {
+    setLoading(true);
+    setError("");
+
+    // Using the API class instead of direct fetch
+    const result = await productsApi.getProducts({ channel: "AGENT" });
+
+    if (result.status === "Success" && Array.isArray(result.response)) {
+      const grouped = categorizeProducts(result.response);
+      setProducts(grouped);
+    } else {
+      setError(result.message || "Failed to fetch products");
+    }
+
+    setLoading(false);
+  };
+
+  const handleCheck = async () => {
+    if (!zipCode || zipCode.length !== 6) return;
+    setLoading(true);
+    setError("");
+
+    // Using the API class for eligibility check
+    const result = await productsApi.checkEligibility({ pincode: zipCode });
+
+    if (result.status === "Success" && result.response) {
+      // Backend returns an object with 'eligible_products' array
+      const eligible = result.response.eligible_products || [];
+      const grouped = categorizeProducts(eligible);
+      setProducts(grouped);
+
+      // Optional: Show message if no products found for this pin
+      if (eligible.length === 0) {
+        setError(`No eligible products found for pincode ${zipCode}`);
+      }
+    } else {
+      setError(result.message || "Eligibility check failed");
+    }
+
+    setLoading(false);
   };
 
   if (!isAuthenticated) return null;
@@ -176,50 +257,104 @@ export const Products: React.FC = () => {
                   if (/^\d*$/.test(val) && val.length <= 6) setZipCode(val);
                 }}
               />
-              <button className={styles.checkBtn} onClick={handleCheck}>
-                Check
+              <button
+                className={styles.checkBtn}
+                onClick={handleCheck}
+                disabled={loading}
+              >
+                {loading ? "..." : "Check"}
               </button>
             </div>
           </div>
         </div>
 
-        <div className={styles.whiteContainer}>
-          <section className={styles.section}>
-            <div className={styles.sectionHeader}>
-              <h2 className={styles.sectionTitle}>Loans</h2>
-              <div className={`${styles.divider} ${styles.dividerBlue}`}></div>
-            </div>
-            <div className={styles.grid}>
-              {PRODUCT_DATA.loans.map((item) => (
-                <Card key={item.id} data={item} />
-              ))}
-            </div>
-          </section>
+        {error && (
+          <div className="text-red-500 mb-4 px-6 font-medium">{error}</div>
+        )}
 
-          <section className={styles.section}>
-            <div className={styles.sectionHeader}>
-              <h2 className={styles.sectionTitle}>Saving Accounts</h2>
-              <div className={`${styles.divider} ${styles.dividerBlue}`}></div>
+        {loading ? (
+          <div className="flex justify-center p-12">
+            <div className="animate-pulse text-gray-500">
+              Loading products...
             </div>
-            <div className={styles.grid}>
-              {PRODUCT_DATA.savings.map((item) => (
-                <Card key={item.id} data={item} />
-              ))}
-            </div>
-          </section>
+          </div>
+        ) : (
+          <div className={styles.whiteContainer}>
+            {/* LOANS SECTION */}
+            {products.loans.length > 0 && (
+              <section className={styles.section}>
+                <div className={styles.sectionHeader}>
+                  <h2 className={styles.sectionTitle}>Loans</h2>
+                  <div
+                    className={`${styles.divider} ${styles.dividerBlue}`}
+                  ></div>
+                </div>
+                <div className={styles.grid}>
+                  {products.loans.map((item) => (
+                    <Card key={item.id} data={item} />
+                  ))}
+                </div>
+              </section>
+            )}
 
-          <section className={styles.section}>
-            <div className={styles.sectionHeader}>
-              <h2 className={styles.sectionTitle}>Credit Cards</h2>
-              <div className={`${styles.divider} ${styles.dividerBlue}`}></div>
-            </div>
-            <div className={styles.grid}>
-              {PRODUCT_DATA.cards.map((item) => (
-                <Card key={item.id} data={item} />
-              ))}
-            </div>
-          </section>
-        </div>
+            {/* SAVINGS SECTION */}
+            {products.savings.length > 0 && (
+              <section className={styles.section}>
+                <div className={styles.sectionHeader}>
+                  <h2 className={styles.sectionTitle}>Saving Accounts</h2>
+                  <div
+                    className={`${styles.divider} ${styles.dividerBlue}`}
+                  ></div>
+                </div>
+                <div className={styles.grid}>
+                  {products.savings.map((item) => (
+                    <Card key={item.id} data={item} />
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {/* CARDS SECTION */}
+            {products.cards.length > 0 && (
+              <section className={styles.section}>
+                <div className={styles.sectionHeader}>
+                  <h2 className={styles.sectionTitle}>Credit Cards</h2>
+                  <div
+                    className={`${styles.divider} ${styles.dividerBlue}`}
+                  ></div>
+                </div>
+                <div className={styles.grid}>
+                  {products.cards.map((item) => (
+                    <Card key={item.id} data={item} />
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {/* Empty State */}
+            {products.loans.length === 0 &&
+              products.savings.length === 0 &&
+              products.cards.length === 0 && (
+                <div className="p-8 text-center text-gray-500 bg-gray-50 rounded-lg mx-6 mb-6">
+                  <div className="text-xl mb-2">No products found</div>
+                  <div className="text-sm">
+                    Try checking a different ZIP code or clear the filter.
+                  </div>
+                  {zipCode && (
+                    <button
+                      onClick={() => {
+                        setZipCode("");
+                        fetchProducts();
+                      }}
+                      className="mt-4 text-blue-600 hover:underline"
+                    >
+                      Clear Filter
+                    </button>
+                  )}
+                </div>
+              )}
+          </div>
+        )}
       </div>
     </MainLayout>
   );
