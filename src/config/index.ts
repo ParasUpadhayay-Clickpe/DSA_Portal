@@ -22,7 +22,7 @@ export const BASE_URLS = {
     prod: "https://notification-prod.dailype.in",
   },
   LOS: {
-    dev: "https://5tpvprq57b.execute-api.ap-south-1.amazonaws.com/dev",
+    dev: "https://los-dev.dailype.in",
     prod: "https://los-prod.dailype.in",
   },
   DSA_PORTAL: {
