@@ -257,19 +257,14 @@ export const Products: React.FC = () => {
           </div>
         </div>
 
-        {error && (
-          <div className="text-red-500 mb-4 px-6 font-medium">{error}</div>
-        )}
+        {error && <div className={styles.errorMessage}>{error}</div>}
 
         {loading ? (
-          <div className="flex justify-center p-12">
-            <div className="animate-pulse text-gray-500">
-              Loading products...
-            </div>
+          <div className={styles.loadingContainer}>
+            <div className={styles.loadingPulse}>Loading products...</div>
           </div>
         ) : (
           <div className={styles.whiteContainer}>
-            {/* LOANS SECTION */}
             {products.loans.length > 0 && (
               <section className={styles.section}>
                 <div className={styles.sectionHeader}>
@@ -321,9 +316,9 @@ export const Products: React.FC = () => {
             {products.loans.length === 0 &&
               products.savings.length === 0 &&
               products.cards.length === 0 && (
-                <div className="p-8 text-center text-gray-500 bg-gray-50 rounded-lg mx-6 mb-6">
-                  <div className="text-xl mb-2">No products found</div>
-                  <div className="text-sm">
+                <div className={styles.emptyState}>
+                  <div className={styles.emptyTitle}>No products found</div>
+                  <div className={styles.emptyDesc}>
                     Try checking a different ZIP code or clear the filter.
                   </div>
                   {zipCode && (
@@ -332,7 +327,7 @@ export const Products: React.FC = () => {
                         setZipCode("");
                         fetchProducts();
                       }}
-                      className="mt-4 text-blue-600 hover:underline"
+                      className={styles.clearFilterBtn}
                     >
                       Clear Filter
                     </button>
